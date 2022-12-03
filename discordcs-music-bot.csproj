@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Module</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <RootNamespace>discordcs_music_bot</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RuntimeIdentifiers>win10-x64;linux-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="DSharpPlus" Version="4.2.0" />
+  </ItemGroup>
+</Project>
