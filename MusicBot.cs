@@ -1,10 +1,10 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using DSharpPlus;
-
-namespace MusicBot
+﻿namespace MusicBot
 {
+
+    using DSharpPlus;
+    using DSharpPlus.CommandsNext;
+    using Microsoft.Extensions.Logging;
+
     class Program
     {
         static void Main(string[] args)
@@ -21,18 +21,33 @@ namespace MusicBot
             var discord = new DiscordClient(new DiscordConfiguration()
             {
                 Token = Environment.GetEnvironmentVariable("TOKEN"),
-                TokenType = TokenType.Bot
+                TokenType = TokenType.Bot,
+                Intents = DiscordIntents.AllUnprivileged,
+                AutoReconnect = true,
+                MinimumLogLevel = LogLevel.Debug
+
             });
+            Console.WriteLine("ONLINE");
 
             discord.MessageCreated += async (s, e) =>
-            {
-                if (e.Message.Content.ToLower().StartsWith("ping"))
-                    await e.Message.RespondAsync("pong!");
+                      {
+                        Console.WriteLine("READING");
+                          if (e.Message.Content.ToLower().StartsWith("ping")){
+                            Console.WriteLine("PINGING");
+                            await e.Message.RespondAsync("pong!");
+                          }
+                      };
 
-            };
+            var commands = discord.UseCommandsNext(new CommandsNextConfiguration()
+            {
+                StringPrefixes = new[] { "!" }
+            });
+
+            commands.RegisterCommands<BotCommands>();
 
             await discord.ConnectAsync();
             await Task.Delay(-1);
         }
     }
+
 }
