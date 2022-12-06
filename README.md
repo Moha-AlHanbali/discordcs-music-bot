@@ -7,7 +7,7 @@ TBA
 ## Functionality
 
 - [x] Get it running
-- [ ] Add the ability to join VC
+- [x] Add the ability to join/leave VC
 - [ ] Add the ability to play via urls
 - [ ] Add the ability to search for tracks
 - [ ] Add the ability to pause/resume
