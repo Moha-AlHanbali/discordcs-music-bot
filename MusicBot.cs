@@ -2,6 +2,7 @@
 {
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
+    using DSharpPlus.VoiceNext;
     using Microsoft.Extensions.Logging;
 
     class Program
@@ -17,7 +18,7 @@
 
         internal static async Task MainAsync()
         {
-
+            // Create a bot instance
             var bot = new DiscordClient(new DiscordConfiguration()
             {
                 Token = Environment.GetEnvironmentVariable("TOKEN"),
@@ -30,6 +31,7 @@
 
             Console.WriteLine("ONLINE");
 
+            // Extend Commands
             var commands = bot.UseCommandsNext(new CommandsNextConfiguration()
             {
                 StringPrefixes = new[] { "!" }
@@ -37,7 +39,8 @@
 
             commands.RegisterCommands<BotCommands>();
 
-            Console.WriteLine("REGISTERED COMMANDS");
+            // Extend Voice Activities
+            bot.UseVoiceNext();
 
             await bot.ConnectAsync();
             await Task.Delay(-1);
