@@ -38,7 +38,7 @@ namespace MusicBot
                 }
                 else
                 {
-                    await context.RespondAsync("Not join to a VC..");
+                    await context.RespondAsync("Not joined to a VC..");
                 }
             }
             catch
