@@ -54,23 +54,29 @@ namespace MusicBot
         [Command("play")]
         public async Task PlayCommand(CommandContext context, params string[] path)
         {
-            string joinedPath = string.Join(" ", path);
-            Console.WriteLine(joinedPath);
-            if (joinedPath.Trim() != "" && joinedPath.Trim() != null)
+            try
             {
-                // string trimmedPath = Regex.Replace(path, " ", "20%");
-                Console.WriteLine($"Started playing {joinedPath}");
-                var voiceNext = context.Client.GetVoiceNext();
-                var connection = voiceNext.GetConnection(context.Guild);
-                var transmit = connection.GetTransmitSink();
-                var pcm = ConvertAudioToPcm(joinedPath);
-                await pcm.CopyToAsync(transmit);
-                await pcm.DisposeAsync();
-                await context.RespondAsync($"Playing {joinedPath}");
+                if (path.Length > 0)
+                {
+                    string joinedPath = string.Join(" ", path);
+                    // string trimmedPath = Regex.Replace(path, " ", "20%");
+                    Console.WriteLine($"Started playing {joinedPath}");
+                    var voiceNext = context.Client.GetVoiceNext();
+                    var connection = voiceNext.GetConnection(context.Guild);
+                    var transmit = connection.GetTransmitSink();
+                    var pcm = ConvertAudioToPcm(joinedPath);
+                    await pcm.CopyToAsync(transmit);
+                    await pcm.DisposeAsync();
+                    await context.RespondAsync($"Playing {joinedPath}");
+                }
+                else
+                {
+                    await context.RespondAsync("Please specify a track to play. . .");
+                }
             }
-            else
+            catch
             {
-                await context.RespondAsync("Please specify a track to play. . .");
+                await context.RespondAsync($"Unable to play track...");
             }
 
         }
