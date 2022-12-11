@@ -1,7 +1,6 @@
 
 namespace MusicBot
 {
-    using System.Text.RegularExpressions;
     using System.IO;
     using System.Diagnostics;
     using DSharpPlus.Entities;
@@ -56,18 +55,29 @@ namespace MusicBot
         {
             try
             {
+                var youtube = new Youtube();
+
                 if (path.Length > 0)
                 {
                     string joinedPath = string.Join(" ", path);
-                    // string trimmedPath = Regex.Replace(path, " ", "20%");
-                    Console.WriteLine($"Started playing {joinedPath}");
-                    var voiceNext = context.Client.GetVoiceNext();
-                    var connection = voiceNext.GetConnection(context.Guild);
-                    var transmit = connection.GetTransmitSink();
-                    var pcm = ConvertAudioToPcm(joinedPath);
-                    await pcm.CopyToAsync(transmit);
-                    await pcm.DisposeAsync();
-                    await context.RespondAsync($"Playing {joinedPath}");
+
+                    if (joinedPath.StartsWith("https://www.youtube.com/"))
+                    {
+                        await youtube.YoutubeSearch(joinedPath);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Started playing {joinedPath}");
+
+                        var voiceNext = context.Client.GetVoiceNext();
+                        var connection = voiceNext.GetConnection(context.Guild);
+                        var transmit = connection.GetTransmitSink();
+                        var pcm = ConvertAudioToPcm(joinedPath);
+                        await pcm.CopyToAsync(transmit);
+                        await pcm.DisposeAsync();
+                        await context.RespondAsync($"Playing {joinedPath}");
+                    }
+
                 }
                 else
                 {
@@ -91,7 +101,6 @@ namespace MusicBot
             });
             return ffmpeg.StandardOutput.BaseStream;
         }
-
     }
 
 }
