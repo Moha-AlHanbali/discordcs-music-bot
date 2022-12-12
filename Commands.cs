@@ -7,6 +7,8 @@ namespace MusicBot
     using DSharpPlus.VoiceNext;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.CommandsNext.Attributes;
+    using YoutubeExplode;
+
     public class BotCommands : BaseCommandModule
     {
         [Command("join")]
@@ -56,6 +58,7 @@ namespace MusicBot
             try
             {
                 var youtube = new Youtube();
+                var yt = new YoutubeClient();
 
                 if (path.Length > 0)
                 {
@@ -63,19 +66,15 @@ namespace MusicBot
 
                     if (joinedPath.StartsWith("https://www.youtube.com/"))
                     {
-                        await youtube.YoutubeSearch(joinedPath);
+                        var song = await youtube.YoutubeSearch(yt, joinedPath);
+                        var streamURL = await youtube.YoutubeStream(yt, song.Url);
+                        await PlayAudio(context, streamURL);
+
+                        await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
                     }
                     else
                     {
-                        Console.WriteLine($"Started playing {joinedPath}");
-
-                        var voiceNext = context.Client.GetVoiceNext();
-                        var connection = voiceNext.GetConnection(context.Guild);
-                        var transmit = connection.GetTransmitSink();
-                        var pcm = ConvertAudioToPcm(joinedPath);
-                        await pcm.CopyToAsync(transmit);
-                        await pcm.DisposeAsync();
-                        await context.RespondAsync($"Playing {joinedPath}");
+                        Console.WriteLine($"DID NOT Start playing {joinedPath}");
                     }
 
                 }
@@ -90,12 +89,24 @@ namespace MusicBot
             }
 
         }
-        private Stream ConvertAudioToPcm(string filePath)
+        private async Task PlayAudio(CommandContext context, string songURL)
+        {
+            var voiceNext = context.Client.GetVoiceNext();
+            var connection = voiceNext.GetConnection(context.Guild);
+            var transmit = connection.GetTransmitSink();
+            var pcm = ConvertAudioToPcm(songURL);
+            await pcm.CopyToAsync(transmit);
+            await pcm.DisposeAsync();
+        }
+
+        private Stream ConvertAudioToPcm(string streamURL)
         {
             var ffmpeg = Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                Arguments = $@"-i ""{filePath}"" -ac 2 -f s16le -ar 48000 pipe:1",
+                // Arguments = $@"-i ""{filePath}"" -ac 2 -f s16le -ar 48000 pipe:1",
+                Arguments = $@"-i {streamURL} -ac 2 -f s16le -ar 48000 pipe:1",
+
                 RedirectStandardOutput = true,
                 UseShellExecute = false
             });
