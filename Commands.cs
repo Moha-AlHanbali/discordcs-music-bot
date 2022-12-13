@@ -66,15 +66,15 @@ namespace MusicBot
 
                     if (joinedPath.StartsWith("https://www.youtube.com/"))
                     {
-                        var song = await youtube.YoutubeSearch(yt, joinedPath);
-                        var streamURL = await youtube.YoutubeStream(yt, song.Url);
-                        await PlayAudio(context, streamURL);
-
+                        var song = await youtube.YoutubeGrab(yt, joinedPath);
+                        var streamURL = await youtube.YoutubeStream(yt, joinedPath);
                         await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
+                        await PlayAudio(context, streamURL);
+                        await context.RespondAsync($"Finished playing {song.Title} ");
                     }
                     else
                     {
-                        Console.WriteLine($"DID NOT Start playing {joinedPath}");
+                        var song = await youtube.YoutubeSearch(yt, joinedPath);
                     }
 
                 }
@@ -105,7 +105,7 @@ namespace MusicBot
             {
                 FileName = "ffmpeg",
                 // Arguments = $@"-i ""{filePath}"" -ac 2 -f s16le -ar 48000 pipe:1",
-                Arguments = $@"-i {streamURL} -ac 2 -f s16le -ar 48000 pipe:1",
+                Arguments = $@"-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2 -i {streamURL} -ac 2 -f s16le -ar 48000 pipe:1",
 
                 RedirectStandardOutput = true,
                 UseShellExecute = false
