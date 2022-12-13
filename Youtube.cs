@@ -4,6 +4,7 @@ namespace MusicBot
     using YoutubeExplode;
     using YoutubeExplode.Common;
     using YoutubeExplode.Search;
+    using YoutubeExplode.Videos;
     using YoutubeExplode.Videos.Streams;
 
     class Youtube
@@ -21,6 +22,12 @@ namespace MusicBot
             //     var url = video.Url;
             //     var duration = video.Duration;
             // }
+        }
+
+        public async Task<Video> YoutubeGrab(YoutubeClient yt, string songURL)
+        {
+            var video = await yt.Videos.GetAsync(songURL);
+            return video;
         }
 
         public async Task<string> YoutubeStream(YoutubeClient yt, string songURL)
