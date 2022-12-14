@@ -75,6 +75,10 @@ namespace MusicBot
                     else
                     {
                         var song = await youtube.YoutubeSearch(yt, joinedPath);
+                        var streamURL = await youtube.YoutubeStream(yt, song.Url);
+                        await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
+                        await PlayAudio(context, streamURL);
+                        await context.RespondAsync($"Finished playing {song.Title} ");
                     }
 
                 }
