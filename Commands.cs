@@ -116,6 +116,60 @@ namespace MusicBot
             });
             return ffmpeg.StandardOutput.BaseStream;
         }
-    }
 
+
+        [Command("pause")]
+        public async Task PauseCommand(CommandContext context, VoiceNextConnection? connection = null)
+
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+                if (connection != null)
+                {
+                    connection.Pause();
+                    await context.RespondAsync("Track paused. . .");
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not pause track..");
+
+            }
+
+        }
+
+        [Command("resume")]
+        public async Task ResumeCommand(CommandContext context, VoiceNextConnection? connection = null)
+
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+                if (connection != null)
+                {
+                    await connection.ResumeAsync();
+                    await context.RespondAsync("Track resumed. . .");
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not resume track..");
+
+            }
+
+        }
+    }
 }
