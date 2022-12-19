@@ -145,6 +145,31 @@ namespace MusicBot
 
         }
 
+        [Command("resume")]
+        public async Task ResumeCommand(CommandContext context, VoiceNextConnection? connection = null)
 
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+                if (connection != null)
+                {
+                    await connection.ResumeAsync();
+                    await context.RespondAsync("Track resumed. . .");
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not resume track..");
+
+            }
+
+        }
     }
 }
