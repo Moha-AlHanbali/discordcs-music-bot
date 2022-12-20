@@ -128,6 +128,7 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+
                     connection.Pause();
                     await context.RespondAsync("Track paused. . .");
 
@@ -155,6 +156,7 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+
                     await connection.ResumeAsync();
                     await context.RespondAsync("Track resumed. . .");
 
@@ -167,6 +169,35 @@ namespace MusicBot
             catch
             {
                 await context.RespondAsync("Could not resume track..");
+
+            }
+
+        }
+
+        [Command("stop")]
+        public async Task StopCommand(CommandContext context, VoiceNextConnection? connection = null)
+
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+
+                if (connection != null)
+                {
+                    connection.Disconnect();
+
+                    await context.RespondAsync("Player stopped. . .");
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not stop player..");
 
             }
 
