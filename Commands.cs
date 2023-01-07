@@ -55,42 +55,43 @@ namespace MusicBot
         [Command("play")]
         public async Task PlayCommand(CommandContext context, params string[] path)
         {
-            try
+            // try
+            // {
+            var youtube = new Youtube();
+            var yt = new YoutubeClient();
+
+            if (path.Length > 0)
             {
-                var youtube = new Youtube();
-                var yt = new YoutubeClient();
+                string joinedPath = string.Join(" ", path);
 
-                if (path.Length > 0)
+                if (joinedPath.StartsWith("https://www.youtube.com/"))
                 {
-                    string joinedPath = string.Join(" ", path);
-
-                    if (joinedPath.StartsWith("https://www.youtube.com/"))
-                    {
-                        var song = await youtube.YoutubeGrab(yt, joinedPath);
-                        var streamURL = await youtube.YoutubeStream(yt, joinedPath);
-                        await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                        await PlayAudio(context, streamURL);
-                        await context.RespondAsync($"Finished playing {song.Title} ");
-                    }
-                    else
-                    {
-                        var song = await youtube.YoutubeSearch(yt, joinedPath);
-                        var streamURL = await youtube.YoutubeStream(yt, song.Url);
-                        await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                        await PlayAudio(context, streamURL);
-                        await context.RespondAsync($"Finished playing {song.Title} ");
-                    }
-
+                    var song = await youtube.YoutubeGrab(yt, joinedPath);
+                    var streamURL = await youtube.YoutubeStream(yt, joinedPath);
+                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
+                    Console.WriteLine(streamURL);
+                    await PlayAudio(context, streamURL);
+                    await context.RespondAsync($"Finished playing {song.Title} ");
                 }
                 else
                 {
-                    await context.RespondAsync("Please specify a track to play. . .");
+                    var song = await youtube.YoutubeSearch(yt, joinedPath);
+                    var streamURL = await youtube.YoutubeStream(yt, song.Url);
+                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
+                    await PlayAudio(context, streamURL);
+                    await context.RespondAsync($"Finished playing {song.Title} ");
                 }
+
             }
-            catch
+            else
             {
-                await context.RespondAsync($"Unable to play track...");
+                await context.RespondAsync("Please specify a track to play. . .");
             }
+            // }
+            // catch
+            // {
+            //     await context.RespondAsync($"Unable to play track...");
+            // }
 
         }
         private async Task PlayAudio(CommandContext context, string songURL)
@@ -117,32 +118,67 @@ namespace MusicBot
             return ffmpeg.StandardOutput.BaseStream;
         }
 
+        private string GetPID()
+        {
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.FileName = "pgrep";
+            proc.StartInfo.Arguments = "ffmpeg";
+            proc.Start();
+            string PID = proc.StandardOutput.ReadToEnd();
+            proc.WaitForExit();
+            return PID;
+        }
+
+        private void PauseFFMPEG(string PID)
+        {
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.FileName = "kill";
+            proc.StartInfo.Arguments = $@"-s SIGSTOP {Int32.Parse(PID)}";
+            proc.Start();
+            proc.WaitForExit();
+        }
+
+        private void ResumeFFMPEG(string PID)
+        {
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.FileName = "kill";
+            proc.StartInfo.Arguments = $@"-s SIGCONT {Int32.Parse(PID)}";
+            proc.Start();
+            proc.WaitForExit();
+        }
 
         [Command("pause")]
         public async Task PauseCommand(CommandContext context, VoiceNextConnection? connection = null)
 
         {
-            try
+            // try
+            // {
+            var voiceNext = context.Client.GetVoiceNext();
+            connection ??= voiceNext?.GetConnection(context.Guild);
+            if (connection != null)
             {
-                var voiceNext = context.Client.GetVoiceNext();
-                connection ??= voiceNext?.GetConnection(context.Guild);
-                if (connection != null)
-                {
-
-                    connection.Pause();
-                    await context.RespondAsync("Track paused. . .");
-
-                }
-                else
-                {
-                    await context.RespondAsync("Not joined to a channel..");
-                }
-            }
-            catch
-            {
-                await context.RespondAsync("Could not pause track..");
+                string PID = GetPID();
+                PauseFFMPEG(PID);
+                // connection.Pause();
+                await context.RespondAsync("Track paused. . .");
 
             }
+            else
+            {
+                await context.RespondAsync("Not joined to a channel..");
+            }
+            // }
+            // catch
+            // {
+            //     await context.RespondAsync("Could not pause track..");
+
+            // }
 
         }
 
@@ -156,8 +192,9 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
-
-                    await connection.ResumeAsync();
+                    string PID = GetPID();
+                    ResumeFFMPEG(PID);
+                    // await connection.ResumeAsync();
                     await context.RespondAsync("Track resumed. . .");
 
                 }
