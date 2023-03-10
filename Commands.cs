@@ -11,6 +11,8 @@ namespace MusicBot
 
     public class BotCommands : BaseCommandModule
     {
+        Queue<Track> trackQueue = new Queue<Track>();
+
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
 
@@ -38,6 +40,7 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+                    trackQueue.Clear();
                     connection.Disconnect();
                 }
                 else
@@ -68,8 +71,11 @@ namespace MusicBot
                 {
                     var song = await youtube.YoutubeGrab(yt, joinedPath);
                     var streamURL = await youtube.YoutubeStream(yt, joinedPath);
+                    trackQueue.Enqueue(new Track(song.Title, streamURL, song.Duration));
                     await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
                     Console.WriteLine(streamURL);
+                    Console.WriteLine(trackQueue);
+
                     await PlayAudio(context, streamURL);
                     await context.RespondAsync($"Finished playing {song.Title} ");
                 }
@@ -166,7 +172,9 @@ namespace MusicBot
                 string PID = GetPID();
                 PauseFFMPEG(PID);
                 // connection.Pause();
-                await context.RespondAsync("Track paused. . .");
+                Track track = trackQueue.Peek();
+                Console.WriteLine(track.TrackName);
+                await context.RespondAsync($"Paused {track.TrackName}");
 
             }
             else
@@ -194,8 +202,10 @@ namespace MusicBot
                 {
                     string PID = GetPID();
                     ResumeFFMPEG(PID);
+                    Track track = trackQueue.Peek();
+
                     // await connection.ResumeAsync();
-                    await context.RespondAsync("Track resumed. . .");
+                    await context.RespondAsync($"Resumed {track}");
 
                 }
                 else
