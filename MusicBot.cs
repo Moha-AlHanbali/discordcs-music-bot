@@ -24,7 +24,7 @@
             {
                 Token = Environment.GetEnvironmentVariable("TOKEN"),
                 TokenType = TokenType.Bot,
-                Intents = DiscordIntents.AllUnprivileged,
+                Intents = DiscordIntents.All,
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
             });
