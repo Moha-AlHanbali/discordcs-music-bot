@@ -11,6 +11,8 @@ namespace MusicBot
 
     public class BotCommands : BaseCommandModule
     {
+        Queue<Track> trackQueue = new Queue<Track>();
+
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
 
@@ -19,7 +21,6 @@ namespace MusicBot
             {
                 channel ??= context.Member?.VoiceState?.Channel;
                 await context.RespondAsync($"Joining {channel?.Name} . . .");
-
                 await channel.ConnectAsync();
             }
             catch
@@ -38,6 +39,7 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+                    trackQueue.Clear();
                     connection.Disconnect();
                 }
                 else
@@ -51,6 +53,38 @@ namespace MusicBot
 
             }
         }
+        [Command("add")]
+        public async Task AddCommand(CommandContext context, params string[] path)
+        {
+            var youtube = new Youtube();
+            var youtubeClient = new YoutubeClient();
+
+            if (trackQueue.Any())
+            {
+                if (path.Length > 0)
+                {
+                    string joinedPath = string.Join(" ", path);
+                    if (joinedPath.StartsWith("https://www.youtube.com/"))
+                    {
+                        Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
+                        await context.RespondAsync($"Added {track.TrackName} to queue");
+                    }
+                    else
+                    {
+                        Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
+                        await context.RespondAsync($"Added {track.TrackName} to queue");
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Please specify a track to add. . .");
+                }
+            }
+            else
+            {
+                await PlayCommand(context, path);
+            }
+        }
 
         [Command("play")]
         public async Task PlayCommand(CommandContext context, params string[] path)
@@ -58,7 +92,7 @@ namespace MusicBot
             // try
             // {
             var youtube = new Youtube();
-            var yt = new YoutubeClient();
+            var youtubeClient = new YoutubeClient();
 
             if (path.Length > 0)
             {
@@ -66,22 +100,18 @@ namespace MusicBot
 
                 if (joinedPath.StartsWith("https://www.youtube.com/"))
                 {
-                    var song = await youtube.YoutubeGrab(yt, joinedPath);
-                    var streamURL = await youtube.YoutubeStream(yt, joinedPath);
-                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                    Console.WriteLine(streamURL);
-                    await PlayAudio(context, streamURL);
-                    await context.RespondAsync($"Finished playing {song.Title} ");
+                    Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+                    await PlayAudio(context, track.TrackURL);
+                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
                 }
                 else
                 {
-                    var song = await youtube.YoutubeSearch(yt, joinedPath);
-                    var streamURL = await youtube.YoutubeStream(yt, song.Url);
-                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                    await PlayAudio(context, streamURL);
-                    await context.RespondAsync($"Finished playing {song.Title} ");
+                    Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+                    await PlayAudio(context, track.TrackURL);
+                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
                 }
-
             }
             else
             {
@@ -94,6 +124,24 @@ namespace MusicBot
             // }
 
         }
+        private async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
+        {
+            var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
+            var streamURL = await youtube.YoutubeStream(youtubeClient, joinedPath);
+            Track track = new Track(song.Title, streamURL, song.Duration);
+            trackQueue.Enqueue(track);
+            return track;
+        }
+
+        private async Task<Track> SearchYoutube(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
+        {
+            var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
+            var streamURL = await youtube.YoutubeStream(youtubeClient, song.Url);
+            Track track = new Track(song.Title, streamURL, song.Duration);
+            trackQueue.Enqueue(track);
+            return track;
+        }
+
         private async Task PlayAudio(CommandContext context, string songURL)
         {
             var voiceNext = context.Client.GetVoiceNext();
@@ -166,7 +214,8 @@ namespace MusicBot
                 string PID = GetPID();
                 PauseFFMPEG(PID);
                 // connection.Pause();
-                await context.RespondAsync("Track paused. . .");
+                Track track = trackQueue.Peek();
+                await context.RespondAsync($"Paused {track.TrackName}");
 
             }
             else
@@ -194,8 +243,10 @@ namespace MusicBot
                 {
                     string PID = GetPID();
                     ResumeFFMPEG(PID);
+                    Track track = trackQueue.Peek();
+
                     // await connection.ResumeAsync();
-                    await context.RespondAsync("Track resumed. . .");
+                    await context.RespondAsync($"Resumed {track.TrackName}");
 
                 }
                 else
@@ -222,9 +273,10 @@ namespace MusicBot
 
                 if (connection != null)
                 {
+                    trackQueue.Clear();
                     connection.Disconnect();
 
-                    await context.RespondAsync("Player stopped. . .");
+                    await context.RespondAsync("Player stopped and cleared Queue. . .");
 
                 }
                 else
@@ -235,6 +287,49 @@ namespace MusicBot
             catch
             {
                 await context.RespondAsync("Could not stop player..");
+
+            }
+
+        }
+
+        [Command("queue")]
+        public async Task QueueCommand(CommandContext context, VoiceNextConnection? connection = null)
+
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+
+                if (connection != null)
+                {
+                    if (trackQueue.Any())
+                    {
+                        string message = "Track Queue:\n";
+                        Int16 counter = 1;
+                        foreach (Track track in trackQueue.ToArray())
+                        {
+                            message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
+                            counter++;
+                        }
+                        await context.RespondAsync(message);
+
+                    }
+                    else
+                    {
+                        await context.RespondAsync("Track queue is empty..");
+                    }
+
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not show queue..");
 
             }
 

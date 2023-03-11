@@ -1,5 +1,6 @@
 ﻿namespace MusicBot
 {
+    using System.Collections.Generic;
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.VoiceNext;
@@ -23,10 +24,9 @@
             {
                 Token = Environment.GetEnvironmentVariable("TOKEN"),
                 TokenType = TokenType.Bot,
-                Intents = DiscordIntents.AllUnprivileged,
+                Intents = DiscordIntents.All,
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
-
             });
 
             Console.WriteLine("ONLINE");
