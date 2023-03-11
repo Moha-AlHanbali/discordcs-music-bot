@@ -103,16 +103,15 @@ namespace MusicBot
                     Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
                     await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
                     await PlayAudio(context, track.TrackURL);
-                    await context.RespondAsync($"Finished playing {track.TrackName}");
+                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
                 }
                 else
                 {
                     Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
                     await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
                     await PlayAudio(context, track.TrackURL);
-                    await context.RespondAsync($"Finished playing {track.TrackName}");
+                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
                 }
-
             }
             else
             {
@@ -288,6 +287,49 @@ namespace MusicBot
             catch
             {
                 await context.RespondAsync("Could not stop player..");
+
+            }
+
+        }
+
+        [Command("queue")]
+        public async Task QueueCommand(CommandContext context, VoiceNextConnection? connection = null)
+
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                connection ??= voiceNext?.GetConnection(context.Guild);
+
+                if (connection != null)
+                {
+                    if (trackQueue.Any())
+                    {
+                        string message = "Track Queue:\n";
+                        Int16 counter = 1;
+                        foreach (Track track in trackQueue.ToArray())
+                        {
+                            message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
+                            counter++;
+                        }
+                        await context.RespondAsync(message);
+
+                    }
+                    else
+                    {
+                        await context.RespondAsync("Track queue is empty..");
+                    }
+
+
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+            }
+            catch
+            {
+                await context.RespondAsync("Could not show queue..");
 
             }
 
