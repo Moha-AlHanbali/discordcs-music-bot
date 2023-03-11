@@ -21,7 +21,6 @@ namespace MusicBot
             {
                 channel ??= context.Member?.VoiceState?.Channel;
                 await context.RespondAsync($"Joining {channel?.Name} . . .");
-
                 await channel.ConnectAsync();
             }
             catch
@@ -58,9 +57,7 @@ namespace MusicBot
         public async Task AddCommand(CommandContext context, params string[] path)
         {
             var youtube = new Youtube();
-            var yt = new YoutubeClient();
-            Console.WriteLine($"{trackQueue.Any()}");
-            Console.WriteLine($"{trackQueue.Peek()}");
+            var youtubeClient = new YoutubeClient();
 
             if (trackQueue.Any())
             {
@@ -69,19 +66,13 @@ namespace MusicBot
                     string joinedPath = string.Join(" ", path);
                     if (joinedPath.StartsWith("https://www.youtube.com/"))
                     {
-                        var song = await youtube.YoutubeGrab(yt, joinedPath);
-                        var streamURL = await youtube.YoutubeStream(yt, joinedPath);
-                        trackQueue.Enqueue(new Track(song.Title, streamURL, song.Duration));
-                        await context.RespondAsync($"Added {song.Title} to queue");
+                        Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
+                        await context.RespondAsync($"Added {track.TrackName} to queue");
                     }
                     else
                     {
-                        var song = await youtube.YoutubeSearch(yt, joinedPath);
-                        var streamURL = await youtube.YoutubeStream(yt, song.Url);
-                        trackQueue.Enqueue(new Track(song.Title, streamURL, song.Duration));
-                        Console.WriteLine($"{trackQueue}");
-                        await context.RespondAsync($"Added {song.Title} to queue");
-
+                        Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
+                        await context.RespondAsync($"Added {track.TrackName} to queue");
                     }
                 }
                 else
@@ -101,7 +92,7 @@ namespace MusicBot
             // try
             // {
             var youtube = new Youtube();
-            var yt = new YoutubeClient();
+            var youtubeClient = new YoutubeClient();
 
             if (path.Length > 0)
             {
@@ -109,25 +100,17 @@ namespace MusicBot
 
                 if (joinedPath.StartsWith("https://www.youtube.com/"))
                 {
-                    var song = await youtube.YoutubeGrab(yt, joinedPath);
-                    var streamURL = await youtube.YoutubeStream(yt, joinedPath);
-                    trackQueue.Enqueue(new Track(song.Title, streamURL, song.Duration));
-                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                    Console.WriteLine(streamURL);
-                    Console.WriteLine($"{trackQueue}");
-
-                    await PlayAudio(context, streamURL);
-                    await context.RespondAsync($"Finished playing {song.Title} ");
+                    Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+                    await PlayAudio(context, track.TrackURL);
+                    await context.RespondAsync($"Finished playing {track.TrackName}");
                 }
                 else
                 {
-                    var song = await youtube.YoutubeSearch(yt, joinedPath);
-                    var streamURL = await youtube.YoutubeStream(yt, song.Url);
-                    trackQueue.Enqueue(new Track(song.Title, streamURL, song.Duration));
-                    Console.WriteLine($"{trackQueue}");
-                    await context.RespondAsync($"Playing {song.Title} - {song.Duration} ♪");
-                    await PlayAudio(context, streamURL);
-                    await context.RespondAsync($"Finished playing {song.Title} ");
+                    Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+                    await PlayAudio(context, track.TrackURL);
+                    await context.RespondAsync($"Finished playing {track.TrackName}");
                 }
 
             }
@@ -142,6 +125,24 @@ namespace MusicBot
             // }
 
         }
+        private async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
+        {
+            var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
+            var streamURL = await youtube.YoutubeStream(youtubeClient, joinedPath);
+            Track track = new Track(song.Title, streamURL, song.Duration);
+            trackQueue.Enqueue(track);
+            return track;
+        }
+
+        private async Task<Track> SearchYoutube(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
+        {
+            var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
+            var streamURL = await youtube.YoutubeStream(youtubeClient, song.Url);
+            Track track = new Track(song.Title, streamURL, song.Duration);
+            trackQueue.Enqueue(track);
+            return track;
+        }
+
         private async Task PlayAudio(CommandContext context, string songURL)
         {
             var voiceNext = context.Client.GetVoiceNext();
@@ -215,7 +216,6 @@ namespace MusicBot
                 PauseFFMPEG(PID);
                 // connection.Pause();
                 Track track = trackQueue.Peek();
-                Console.WriteLine($"{track.TrackName}");
                 await context.RespondAsync($"Paused {track.TrackName}");
 
             }
@@ -274,9 +274,10 @@ namespace MusicBot
 
                 if (connection != null)
                 {
+                    trackQueue.Clear();
                     connection.Disconnect();
 
-                    await context.RespondAsync("Player stopped. . .");
+                    await context.RespondAsync("Player stopped and cleared Queue. . .");
 
                 }
                 else
