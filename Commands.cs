@@ -12,6 +12,7 @@ namespace MusicBot
     public class BotCommands : BaseCommandModule
     {
         Queue<Track> trackQueue = new Queue<Track>();
+        Boolean playStatus = false;
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
@@ -39,6 +40,7 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+                    playStatus = false;
                     trackQueue.Clear();
                     connection.Disconnect();
                 }
@@ -66,12 +68,12 @@ namespace MusicBot
                 {
                     await AddTrack(context, youtube, youtubeClient, joinedPath);
                 }
-                else
+                else if (!trackQueue.Any() && playStatus == false)
                 {
+                    playStatus = true;
                     await AddTrack(context, youtube, youtubeClient, joinedPath);
                     await PlayNext(context, trackQueue.Peek());
                 }
-
             }
             else
             {
@@ -118,7 +120,16 @@ namespace MusicBot
             if (path.Length > 0)
             {
                 await AddCommand(context, path);
-                if (!trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
+                if (!trackQueue.Any())
+                {
+                    playStatus = true;
+                    await PlayNext(context, trackQueue.Peek());
+                }
+            }
+            else if (trackQueue.Any() && playStatus == false)
+            {
+                playStatus = true;
+                await PlayNext(context, trackQueue.Peek());
             }
             else
             {
@@ -137,6 +148,7 @@ namespace MusicBot
             await PlayAudio(context, track.TrackURL);
             await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
             if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
+            else playStatus = false;
         }
 
 
@@ -209,11 +221,11 @@ namespace MusicBot
             connection ??= voiceNext?.GetConnection(context.Guild);
             if (connection != null)
             {
+                playStatus = false;
                 string PID = GetPID();
                 PauseFFMPEG(PID);
                 // connection.Pause();
-                Track track = trackQueue.Peek();
-                await context.RespondAsync($"Paused {track.TrackName}");
+                await context.RespondAsync($"Paused {trackQueue.Peek().TrackName}");
 
             }
             else
@@ -239,12 +251,11 @@ namespace MusicBot
                 connection ??= voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
+                    playStatus = true;
                     string PID = GetPID();
                     ResumeFFMPEG(PID);
-                    Track track = trackQueue.Peek();
-
                     // await connection.ResumeAsync();
-                    await context.RespondAsync($"Resumed {track.TrackName}");
+                    await context.RespondAsync($"Resumed {trackQueue.Peek().TrackName}");
 
                 }
                 else
@@ -271,6 +282,7 @@ namespace MusicBot
 
                 if (connection != null)
                 {
+                    playStatus = false;
                     trackQueue.Clear();
                     connection.Disconnect();
 
