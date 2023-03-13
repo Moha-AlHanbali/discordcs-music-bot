@@ -59,30 +59,53 @@ namespace MusicBot
             var youtube = new Youtube();
             var youtubeClient = new YoutubeClient();
 
-            if (trackQueue.Any())
+            if (path.Length > 0)
             {
-                if (path.Length > 0)
+                string joinedPath = string.Join(" ", path);
+                if (trackQueue.Any())
                 {
-                    string joinedPath = string.Join(" ", path);
-                    if (joinedPath.StartsWith("https://www.youtube.com/"))
-                    {
-                        Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
-                        await context.RespondAsync($"Added {track.TrackName} to queue");
-                    }
-                    else
-                    {
-                        Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
-                        await context.RespondAsync($"Added {track.TrackName} to queue");
-                    }
+                    await AddTrack(context, youtube, youtubeClient, joinedPath);
                 }
                 else
                 {
-                    await context.RespondAsync("Please specify a track to add. . .");
+                    await AddTrack(context, youtube, youtubeClient, joinedPath);
+                    await PlayNext(context, trackQueue.Peek());
                 }
+
             }
             else
             {
-                await PlayCommand(context, path);
+                await context.RespondAsync("Please specify a track to add. . .");
+            }
+            async Task AddTrack(CommandContext context, Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
+            {
+                if (joinedPath.StartsWith("https://www.youtube.com/"))
+                {
+                    Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Added {track.TrackName} to queue");
+                }
+                else
+                {
+                    Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
+                    await context.RespondAsync($"Added {track.TrackName} to queue");
+                }
+            }
+            async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
+            {
+                var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
+                var streamURL = await youtube.YoutubeStream(youtubeClient, joinedPath);
+                Track track = new Track(song.Title, streamURL, song.Duration);
+                trackQueue.Enqueue(track);
+                return track;
+            }
+
+            async Task<Track> SearchYoutube(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
+            {
+                var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
+                var streamURL = await youtube.YoutubeStream(youtubeClient, song.Url);
+                Track track = new Track(song.Title, streamURL, song.Duration);
+                trackQueue.Enqueue(track);
+                return track;
             }
         }
 
@@ -91,27 +114,11 @@ namespace MusicBot
         {
             // try
             // {
-            var youtube = new Youtube();
-            var youtubeClient = new YoutubeClient();
 
             if (path.Length > 0)
             {
-                string joinedPath = string.Join(" ", path);
-
-                if (joinedPath.StartsWith("https://www.youtube.com/"))
-                {
-                    Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
-                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
-                    await PlayAudio(context, track.TrackURL);
-                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
-                }
-                else
-                {
-                    Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
-                    await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
-                    await PlayAudio(context, track.TrackURL);
-                    await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
-                }
+                await AddCommand(context, path);
+                if (!trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
             }
             else
             {
@@ -124,23 +131,14 @@ namespace MusicBot
             // }
 
         }
-        private async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
+        private async Task PlayNext(CommandContext context, Track track)
         {
-            var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
-            var streamURL = await youtube.YoutubeStream(youtubeClient, joinedPath);
-            Track track = new Track(song.Title, streamURL, song.Duration);
-            trackQueue.Enqueue(track);
-            return track;
+            await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+            await PlayAudio(context, track.TrackURL);
+            await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
+            if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
         }
 
-        private async Task<Track> SearchYoutube(Youtube youtube, YoutubeClient youtubeClient, string joinedPath)
-        {
-            var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
-            var streamURL = await youtube.YoutubeStream(youtubeClient, song.Url);
-            Track track = new Track(song.Title, streamURL, song.Duration);
-            trackQueue.Enqueue(track);
-            return track;
-        }
 
         private async Task PlayAudio(CommandContext context, string songURL)
         {
