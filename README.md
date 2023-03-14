@@ -11,7 +11,7 @@ TBA
 - [x] Add the ability to play via urls
 - [x] Add the ability to search for tracks
 - [x] Add the ability to pause/resume
-- [ ] Add the ability to stop/skip
+- [x] Add the ability to stop/skip
 - [ ] Add the ability to Replay
 - [ ] Add the ability to Repeat
 - [ ] Add Queue command
