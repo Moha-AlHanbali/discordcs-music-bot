@@ -13,6 +13,7 @@ namespace MusicBot
     {
         Queue<Track> trackQueue = new Queue<Track>();
         Boolean playStatus = false;
+        Boolean skipFlag = false;
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
@@ -32,12 +33,12 @@ namespace MusicBot
         }
 
         [Command("leave")]
-        public async Task LeaveCommand(CommandContext context, VoiceNextConnection? connection = null)
+        public async Task LeaveCommand(CommandContext context)
         {
             try
             {
                 var voiceNext = context.Client.GetVoiceNext();
-                connection ??= voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
                 if (connection != null)
                 {
                     playStatus = false;
@@ -61,23 +62,33 @@ namespace MusicBot
             var youtube = new Youtube();
             var youtubeClient = new YoutubeClient();
 
-            if (path.Length > 0)
+            var voiceNext = context.Client.GetVoiceNext();
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+
+            if (connection != null)
             {
-                string joinedPath = string.Join(" ", path);
-                if (trackQueue.Any())
+                if (path.Length > 0)
                 {
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
+                    string joinedPath = string.Join(" ", path);
+                    if (trackQueue.Any())
+                    {
+                        await AddTrack(context, youtube, youtubeClient, joinedPath);
+                    }
+                    else if (!trackQueue.Any() && playStatus == false)
+                    {
+                        playStatus = true;
+                        await AddTrack(context, youtube, youtubeClient, joinedPath);
+                        await PlayNext(context, trackQueue.Peek());
+                    }
                 }
-                else if (!trackQueue.Any() && playStatus == false)
+                else
                 {
-                    playStatus = true;
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
-                    await PlayNext(context, trackQueue.Peek());
+                    await context.RespondAsync("Please specify a track to add. . .");
                 }
             }
             else
             {
-                await context.RespondAsync("Please specify a track to add. . .");
+                await context.RespondAsync("Not joined to a channel..");
             }
             async Task AddTrack(CommandContext context, Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
             {
@@ -92,6 +103,7 @@ namespace MusicBot
                     await context.RespondAsync($"Added {track.TrackName} to queue");
                 }
             }
+
             async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
             {
                 var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
@@ -116,24 +128,33 @@ namespace MusicBot
         {
             // try
             // {
+            var voiceNext = context.Client.GetVoiceNext();
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
 
-            if (path.Length > 0)
+            if (connection != null)
             {
-                await AddCommand(context, path);
-                if (!trackQueue.Any())
+                if (path.Length > 0)
                 {
-                    playStatus = true;
-                    await PlayNext(context, trackQueue.Peek());
+                    await AddCommand(context, path);
+                    if (!trackQueue.Any())
+                    {
+                        playStatus = true;
+                        await PlayNext(context, trackQueue.Peek());
+                    }
+                    else if (trackQueue.Any() && playStatus == false)
+                    {
+                        playStatus = true;
+                        await PlayNext(context, trackQueue.Peek());
+                    }
                 }
-            }
-            else if (trackQueue.Any() && playStatus == false)
-            {
-                playStatus = true;
-                await PlayNext(context, trackQueue.Peek());
+                else
+                {
+                    await context.RespondAsync("Please specify a track to play. . .");
+                }
             }
             else
             {
-                await context.RespondAsync("Please specify a track to play. . .");
+                await context.RespondAsync("Not joined to a channel..");
             }
             // }
             // catch
@@ -144,9 +165,12 @@ namespace MusicBot
         }
         private async Task PlayNext(CommandContext context, Track track)
         {
+            playStatus = true;
             await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
             await PlayAudio(context, track.TrackURL);
-            await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
+            if (skipFlag) await context.RespondAsync($"Skipped {trackQueue.Dequeue().TrackName}");
+            else await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
+            skipFlag = false;
             if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
             else playStatus = false;
         }
@@ -211,74 +235,61 @@ namespace MusicBot
             proc.WaitForExit();
         }
 
+        private void StopFFMPEG()
+        {
+            Process proc = new Process();
+            proc.StartInfo.UseShellExecute = false;
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.FileName = "killall";
+            proc.StartInfo.Arguments = $@"ffmpeg";
+            proc.Start();
+            proc.WaitForExit();
+        }
         [Command("pause")]
-        public async Task PauseCommand(CommandContext context, VoiceNextConnection? connection = null)
+        public async Task PauseCommand(CommandContext context)
 
         {
-            // try
-            // {
             var voiceNext = context.Client.GetVoiceNext();
-            connection ??= voiceNext?.GetConnection(context.Guild);
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
             if (connection != null)
             {
-                playStatus = false;
                 string PID = GetPID();
                 PauseFFMPEG(PID);
-                // connection.Pause();
                 await context.RespondAsync($"Paused {trackQueue.Peek().TrackName}");
+            }
+            else
+            {
+                await context.RespondAsync("Not joined to a channel..");
+            }
+        }
+
+        [Command("resume")]
+        public async Task ResumeCommand(CommandContext context)
+
+        {
+            var voiceNext = context.Client.GetVoiceNext();
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+            if (connection != null)
+            {
+                string PID = GetPID();
+                ResumeFFMPEG(PID);
+                await context.RespondAsync($"Resumed {trackQueue.Peek().TrackName}");
 
             }
             else
             {
                 await context.RespondAsync("Not joined to a channel..");
             }
-            // }
-            // catch
-            // {
-            //     await context.RespondAsync("Could not pause track..");
-
-            // }
-
-        }
-
-        [Command("resume")]
-        public async Task ResumeCommand(CommandContext context, VoiceNextConnection? connection = null)
-
-        {
-            try
-            {
-                var voiceNext = context.Client.GetVoiceNext();
-                connection ??= voiceNext?.GetConnection(context.Guild);
-                if (connection != null)
-                {
-                    playStatus = true;
-                    string PID = GetPID();
-                    ResumeFFMPEG(PID);
-                    // await connection.ResumeAsync();
-                    await context.RespondAsync($"Resumed {trackQueue.Peek().TrackName}");
-
-                }
-                else
-                {
-                    await context.RespondAsync("Not joined to a channel..");
-                }
-            }
-            catch
-            {
-                await context.RespondAsync("Could not resume track..");
-
-            }
-
         }
 
         [Command("stop")]
-        public async Task StopCommand(CommandContext context, VoiceNextConnection? connection = null)
+        public async Task StopCommand(CommandContext context)
 
         {
             try
             {
                 var voiceNext = context.Client.GetVoiceNext();
-                connection ??= voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
 
                 if (connection != null)
                 {
@@ -303,13 +314,13 @@ namespace MusicBot
         }
 
         [Command("queue")]
-        public async Task QueueCommand(CommandContext context, VoiceNextConnection? connection = null)
+        public async Task QueueCommand(CommandContext context)
 
         {
             try
             {
                 var voiceNext = context.Client.GetVoiceNext();
-                connection ??= voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
 
                 if (connection != null)
                 {
@@ -343,6 +354,46 @@ namespace MusicBot
 
             }
 
+        }
+
+        [Command("skip")]
+        public async Task SkipCommand(CommandContext context)
+        {
+            try
+            {
+                var voiceNext = context.Client.GetVoiceNext();
+                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+
+                if (connection != null)
+                {
+                    if (trackQueue.Any())
+                    {
+                        StopFFMPEG();
+                        skipFlag = true;
+                        if (trackQueue.Any() && playStatus == false)
+                        {
+                            playStatus = true;
+                            await PlayNext(context, trackQueue.Peek());
+                        }
+                        else playStatus = false;
+                    }
+                    else
+                    {
+                        await context.RespondAsync("No tracks to skip..");
+
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+                }
+
+            }
+            catch
+            {
+                await context.RespondAsync("Could not skip track..");
+
+            }
         }
     }
 }
