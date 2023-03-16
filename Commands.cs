@@ -14,6 +14,7 @@ namespace MusicBot
         Queue<Track> trackQueue = new Queue<Track>();
         Boolean playStatus = false;
         Boolean skipFlag = false;
+        Boolean repeatFlag = false;
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
@@ -166,13 +167,14 @@ namespace MusicBot
         private async Task PlayNext(CommandContext context, Track track)
         {
             playStatus = true;
-            await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
+            if (!repeatFlag) await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
             await PlayAudio(context, track.TrackURL);
             if (skipFlag) await context.RespondAsync($"Skipped {trackQueue.Dequeue().TrackName}");
-            else await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
+            else if (!repeatFlag) await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
             skipFlag = false;
             if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
             else playStatus = false;
+            repeatFlag = false;
         }
 
 
@@ -330,7 +332,14 @@ namespace MusicBot
                         Int16 counter = 1;
                         foreach (Track track in trackQueue.ToArray())
                         {
-                            message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
+                            if (repeatFlag && counter == 1)
+                            {
+                                message += $"{counter}. {track.TrackName} - {track.TrackDuration} - Repeating\n";
+                            }
+                            else
+                            {
+                                message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
+                            }
                             counter++;
                         }
                         await context.RespondAsync(message);
@@ -395,5 +404,41 @@ namespace MusicBot
 
             }
         }
+
+        [Command("repeat")]
+        public async Task RepeatCommand(CommandContext context)
+        {
+
+            var voiceNext = context.Client.GetVoiceNext();
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+            if (connection != null)
+            {
+                if (trackQueue.Any())
+                {
+                    Track track = trackQueue.Peek();
+                    if (!repeatFlag)
+                    {
+                        repeatFlag = true;
+                        await context.RespondAsync($"Repeating {track.TrackName} - {track.TrackDuration}");
+                    }
+                    else
+                    {
+                        repeatFlag = false;
+                        await context.RespondAsync($"Stopped repeating {track.TrackName} - {track.TrackDuration}");
+
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Track queue is empty..");
+                }
+
+            }
+            else
+            {
+                await context.RespondAsync("Not joined to a channel..");
+            }
+        }
+
     }
 }
