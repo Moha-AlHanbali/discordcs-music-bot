@@ -15,6 +15,7 @@ namespace MusicBot
         Boolean playStatus = false;
         Boolean skipFlag = false;
         Boolean repeatFlag = false;
+        Boolean replayFlag = false;
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
@@ -169,6 +170,12 @@ namespace MusicBot
             playStatus = true;
             if (!repeatFlag) await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
             await PlayAudio(context, track.TrackURL);
+            if (replayFlag)
+            {
+                replayFlag = false;
+                await PlayNext(context, trackQueue.Peek());
+                return;
+            }
             if (skipFlag) await context.RespondAsync($"Skipped {trackQueue.Dequeue().TrackName}");
             else if (!repeatFlag) await context.RespondAsync($"Finished playing {trackQueue.Dequeue().TrackName}");
             skipFlag = false;
@@ -379,6 +386,8 @@ namespace MusicBot
                     {
                         StopFFMPEG();
                         skipFlag = true;
+                        repeatFlag = false;
+                        replayFlag = false;
                         if (trackQueue.Any() && playStatus == false)
                         {
                             playStatus = true;
@@ -439,6 +448,41 @@ namespace MusicBot
                 await context.RespondAsync("Not joined to a channel..");
             }
         }
+        [Command("replay")]
+        public async Task ReplayCommand(CommandContext context)
+        {
+            var voiceNext = context.Client.GetVoiceNext();
+            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
 
+            if (connection != null)
+            {
+                if (trackQueue.Any())
+                {
+                    Track track = trackQueue.Peek();
+                    if (!replayFlag)
+                    {
+                        replayFlag = true;
+                        StopFFMPEG();
+                        await context.RespondAsync($"Replaying {track.TrackName} - {track.TrackDuration}");
+
+                    }
+                    else
+                    {
+                        replayFlag = false;
+                        await context.RespondAsync($"Stopped replaying {track.TrackName} - {track.TrackDuration}");
+
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Track queue is empty..");
+                }
+
+            }
+            else
+            {
+                await context.RespondAsync("Not joined to a channel..");
+            }
+        }
     }
 }
