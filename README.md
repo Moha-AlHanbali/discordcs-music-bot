@@ -12,9 +12,9 @@ TBA
 - [x] Add the ability to search for tracks
 - [x] Add the ability to pause/resume
 - [x] Add the ability to stop/skip
-- [ ] Add the ability to Replay
-- [ ] Add the ability to Repeat
-- [ ] Add Queue command
+- [x] Add the ability to Replay
+- [x] Add the ability to Repeat
+- [x] Add Queue command
 - [ ] Detect player state accurately and respond accordingly
 - [ ] Handle Errors (Somewhat)
 - [ ] Volume Control
