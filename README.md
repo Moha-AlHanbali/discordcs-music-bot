@@ -19,3 +19,5 @@ TBA
 - [ ] Handle Errors (Somewhat)
 - [ ] Volume Control
 - [ ] Inactivity Timeout
+- [ ] Slash Commands
+- [ ] Accept Playlists
