@@ -18,20 +18,49 @@ namespace MusicBot
         Boolean replayFlag = false;
 
         [Command("join")]
-        public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
+        public async Task JoinCommand(CommandContext context)
 
         {
             try
             {
-                channel ??= context.Member?.VoiceState?.Channel;
-                await context.RespondAsync($"Joining {channel?.Name} . . .");
-                await channel.ConnectAsync();
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                if (memberChannel != null)
+                {
+                    if (botChannel == null)
+                    {
+                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        await memberChannel.ConnectAsync();
+                    }
+                    else if (botConnection != null && memberChannel?.Id != botChannel.Id)
+                    {
+                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        botConnection.Disconnect();
+                        await memberChannel.ConnectAsync();
+                    }
+                    else
+                    {
+                        await context.RespondAsync($"Already joined to {memberChannel?.Name} channel");
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+
+                }
             }
             catch
             {
                 await context.RespondAsync("Could not join channel..");
             }
+        }
 
+        private VoiceNextConnection GetBotConnection(CommandContext context)
+        {
+            var voiceNext = context.Client.GetVoiceNext();
+            return voiceNext.GetConnection(context.Guild);
         }
 
         [Command("leave")]
@@ -39,13 +68,12 @@ namespace MusicBot
         {
             try
             {
-                var voiceNext = context.Client.GetVoiceNext();
-                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
-                if (connection != null)
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                if (botConnection != null)
                 {
                     playStatus = false;
                     trackQueue.Clear();
-                    connection.Disconnect();
+                    botConnection.Disconnect();
                 }
                 else
                 {
@@ -64,10 +92,9 @@ namespace MusicBot
             var youtube = new Youtube();
             var youtubeClient = new YoutubeClient();
 
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+            VoiceNextConnection botConnection = GetBotConnection(context);
 
-            if (connection != null)
+            if (botConnection != null)
             {
                 if (path.Length > 0)
                 {
@@ -130,10 +157,9 @@ namespace MusicBot
         {
             // try
             // {
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+            VoiceNextConnection botConnection = GetBotConnection(context);
 
-            if (connection != null)
+            if (botConnection != null)
             {
                 if (path.Length > 0)
                 {
@@ -187,9 +213,8 @@ namespace MusicBot
 
         private async Task PlayAudio(CommandContext context, string songURL)
         {
-            var voiceNext = context.Client.GetVoiceNext();
-            var connection = voiceNext.GetConnection(context.Guild);
-            var transmit = connection.GetTransmitSink();
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            var transmit = botConnection.GetTransmitSink();
             var pcm = ConvertAudioToPcm(songURL);
             await pcm.CopyToAsync(transmit);
             await pcm.DisposeAsync();
@@ -258,9 +283,8 @@ namespace MusicBot
         public async Task PauseCommand(CommandContext context)
 
         {
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
-            if (connection != null)
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            if (botConnection != null)
             {
                 string PID = GetPID();
                 PauseFFMPEG(PID);
@@ -276,9 +300,8 @@ namespace MusicBot
         public async Task ResumeCommand(CommandContext context)
 
         {
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
-            if (connection != null)
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            if (botConnection != null)
             {
                 string PID = GetPID();
                 ResumeFFMPEG(PID);
@@ -297,15 +320,13 @@ namespace MusicBot
         {
             try
             {
-                var voiceNext = context.Client.GetVoiceNext();
-                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection botConnection = GetBotConnection(context);
 
-                if (connection != null)
+                if (botConnection != null)
                 {
                     playStatus = false;
+                    StopFFMPEG();
                     trackQueue.Clear();
-                    connection.Disconnect();
-
                     await context.RespondAsync("Player stopped and cleared Queue. . .");
 
                 }
@@ -328,10 +349,9 @@ namespace MusicBot
         {
             try
             {
-                var voiceNext = context.Client.GetVoiceNext();
-                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection botConnection = GetBotConnection(context);
 
-                if (connection != null)
+                if (botConnection != null)
                 {
                     if (trackQueue.Any())
                     {
@@ -377,10 +397,9 @@ namespace MusicBot
         {
             try
             {
-                var voiceNext = context.Client.GetVoiceNext();
-                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+                VoiceNextConnection botConnection = GetBotConnection(context);
 
-                if (connection != null)
+                if (botConnection != null)
                 {
                     if (trackQueue.Any())
                     {
@@ -418,9 +437,8 @@ namespace MusicBot
         public async Task RepeatCommand(CommandContext context)
         {
 
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
-            if (connection != null)
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            if (botConnection != null)
             {
                 if (trackQueue.Any())
                 {
@@ -451,10 +469,10 @@ namespace MusicBot
         [Command("replay")]
         public async Task ReplayCommand(CommandContext context)
         {
-            var voiceNext = context.Client.GetVoiceNext();
-            VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+            VoiceNextConnection botConnection = GetBotConnection(context);
 
-            if (connection != null)
+
+            if (botConnection != null)
             {
                 if (trackQueue.Any())
                 {
