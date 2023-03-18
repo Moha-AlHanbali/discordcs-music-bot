@@ -327,9 +327,8 @@ namespace MusicBot
                 if (connection != null)
                 {
                     playStatus = false;
+                    StopFFMPEG();
                     trackQueue.Clear();
-                    connection.Disconnect();
-
                     await context.RespondAsync("Player stopped and cleared Queue. . .");
 
                 }
