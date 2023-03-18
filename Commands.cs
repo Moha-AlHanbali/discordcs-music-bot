@@ -18,20 +18,44 @@ namespace MusicBot
         Boolean replayFlag = false;
 
         [Command("join")]
-        public async Task JoinCommand(CommandContext context, DiscordChannel? channel = null)
+        public async Task JoinCommand(CommandContext context)
 
         {
             try
             {
-                channel ??= context.Member?.VoiceState?.Channel;
-                await context.RespondAsync($"Joining {channel?.Name} . . .");
-                await channel.ConnectAsync();
+                var voiceNext = context.Client.GetVoiceNext();
+                VoiceNextConnection? connection = voiceNext?.GetConnection(context.Guild);
+
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                DiscordChannel? botChannel = connection?.TargetChannel;
+                if (memberChannel != null)
+                {
+                    if (botChannel == null)
+                    {
+                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        await memberChannel.ConnectAsync();
+                    }
+                    else if (connection != null && memberChannel?.Id != botChannel.Id)
+                    {
+                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        connection.Disconnect();
+                        await memberChannel.ConnectAsync();
+                    }
+                    else
+                    {
+                        await context.RespondAsync($"Already joined to {memberChannel?.Name} channel");
+                    }
+                }
+                else
+                {
+                    await context.RespondAsync("Not joined to a channel..");
+
+                }
             }
             catch
             {
                 await context.RespondAsync("Could not join channel..");
             }
-
         }
 
         [Command("leave")]
