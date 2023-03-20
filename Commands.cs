@@ -17,6 +17,9 @@ namespace MusicBot
         Boolean repeatFlag = false;
         Boolean replayFlag = false;
 
+        private const String BotChannelResponse = "Bot must join a voice channel to accept commands";
+        private const String MemberChannelResponse = "You have to be in a voice channel to use bot commands";
+
         [Command("join")]
         public async Task JoinCommand(CommandContext context)
 
@@ -24,19 +27,19 @@ namespace MusicBot
             try
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
 
                 if (memberChannel != null)
                 {
-                    if (botChannel == null)
+                    if (botConnection == null)
                     {
                         await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
                         await memberChannel.ConnectAsync();
                     }
-                    else if (botConnection != null && memberChannel?.Id != botChannel.Id)
+                    else if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
                     {
-                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        await context.RespondAsync($"Moving to {memberChannel?.Name} . . .");
                         botConnection.Disconnect();
                         await memberChannel.ConnectAsync();
                     }
@@ -47,8 +50,7 @@ namespace MusicBot
                 }
                 else
                 {
-                    await context.RespondAsync("Not joined to a channel..");
-
+                    await context.RespondAsync(MemberChannelResponse);
                 }
             }
             catch
@@ -68,16 +70,27 @@ namespace MusicBot
         {
             try
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                if (botConnection != null)
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                if (memberChannel != null)
                 {
-                    playStatus = false;
-                    trackQueue.Clear();
-                    botConnection.Disconnect();
+                    VoiceNextConnection botConnection = GetBotConnection(context);
+                    DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                    if (botChannel != null)
+                    {
+                        playStatus = false;
+                        trackQueue.Clear();
+                        botConnection.Disconnect();
+                    }
+                    else
+                    {
+                        await context.RespondAsync(BotChannelResponse);
+                    }
                 }
                 else
                 {
-                    await context.RespondAsync("Not joined to a channel..");
+                    await context.RespondAsync(MemberChannelResponse);
+
                 }
             }
             catch
@@ -89,36 +102,47 @@ namespace MusicBot
         [Command("add")]
         public async Task AddCommand(CommandContext context, params string[] path)
         {
-            var youtube = new Youtube();
-            var youtubeClient = new YoutubeClient();
-
-            VoiceNextConnection botConnection = GetBotConnection(context);
-
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                if (path.Length > 0)
+                var youtube = new Youtube();
+                var youtubeClient = new YoutubeClient();
+
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                if (botChannel != null)
                 {
-                    string joinedPath = string.Join(" ", path);
-                    if (trackQueue.Any())
+                    if (path.Length > 0)
                     {
-                        await AddTrack(context, youtube, youtubeClient, joinedPath);
+                        string joinedPath = string.Join(" ", path);
+                        if (trackQueue.Any())
+                        {
+                            await AddTrack(context, youtube, youtubeClient, joinedPath);
+                        }
+                        else if (!trackQueue.Any() && playStatus == false)
+                        {
+                            playStatus = true;
+                            await AddTrack(context, youtube, youtubeClient, joinedPath);
+                            await PlayNext(context, trackQueue.Peek());
+                        }
                     }
-                    else if (!trackQueue.Any() && playStatus == false)
+                    else
                     {
-                        playStatus = true;
-                        await AddTrack(context, youtube, youtubeClient, joinedPath);
-                        await PlayNext(context, trackQueue.Peek());
+                        await context.RespondAsync("Please specify a track to add. . .");
                     }
                 }
                 else
                 {
-                    await context.RespondAsync("Please specify a track to add. . .");
+                    await context.RespondAsync(BotChannelResponse);
                 }
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
+
             }
+
             async Task AddTrack(CommandContext context, Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
             {
                 if (joinedPath.StartsWith("https://www.youtube.com/"))
@@ -157,32 +181,41 @@ namespace MusicBot
         {
             // try
             // {
-            VoiceNextConnection botConnection = GetBotConnection(context);
-
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                if (path.Length > 0)
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                if (botChannel != null)
                 {
-                    await AddCommand(context, path);
-                    if (!trackQueue.Any())
+                    if (path.Length > 0)
                     {
-                        playStatus = true;
-                        await PlayNext(context, trackQueue.Peek());
+                        await AddCommand(context, path);
+                        if (!trackQueue.Any())
+                        {
+                            playStatus = true;
+                            await PlayNext(context, trackQueue.Peek());
+                        }
+                        else if (trackQueue.Any() && playStatus == false)
+                        {
+                            playStatus = true;
+                            await PlayNext(context, trackQueue.Peek());
+                        }
                     }
-                    else if (trackQueue.Any() && playStatus == false)
+                    else
                     {
-                        playStatus = true;
-                        await PlayNext(context, trackQueue.Peek());
+                        await context.RespondAsync("Please specify a track to play. . .");
                     }
                 }
                 else
                 {
-                    await context.RespondAsync("Please specify a track to play. . .");
+                    await context.RespondAsync(BotChannelResponse);
                 }
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
             }
             // }
             // catch
@@ -283,16 +316,26 @@ namespace MusicBot
         public async Task PauseCommand(CommandContext context)
 
         {
-            VoiceNextConnection botConnection = GetBotConnection(context);
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                string PID = GetPID();
-                PauseFFMPEG(PID);
-                await context.RespondAsync($"Paused {trackQueue.Peek().TrackName}");
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                if (botChannel != null)
+                {
+                    string PID = GetPID();
+                    PauseFFMPEG(PID);
+                    await context.RespondAsync($"Paused {trackQueue.Peek().TrackName}");
+                }
+                else
+                {
+                    await context.RespondAsync(BotChannelResponse);
+                }
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
             }
         }
 
@@ -300,17 +343,27 @@ namespace MusicBot
         public async Task ResumeCommand(CommandContext context)
 
         {
-            VoiceNextConnection botConnection = GetBotConnection(context);
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                string PID = GetPID();
-                ResumeFFMPEG(PID);
-                await context.RespondAsync($"Resumed {trackQueue.Peek().TrackName}");
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
 
+                if (botChannel != null)
+                {
+                    string PID = GetPID();
+                    ResumeFFMPEG(PID);
+                    await context.RespondAsync($"Resumed {trackQueue.Peek().TrackName}");
+
+                }
+                else
+                {
+                    await context.RespondAsync(BotChannelResponse);
+                }
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
             }
         }
 
@@ -320,19 +373,30 @@ namespace MusicBot
         {
             try
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-
-                if (botConnection != null)
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                if (memberChannel != null)
                 {
-                    playStatus = false;
-                    StopFFMPEG();
-                    trackQueue.Clear();
-                    await context.RespondAsync("Player stopped and cleared Queue. . .");
+                    VoiceNextConnection botConnection = GetBotConnection(context);
+                    DiscordChannel? botChannel = botConnection?.TargetChannel;
 
+                    if (botChannel != null)
+                    {
+                        playStatus = false;
+                        StopFFMPEG();
+                        trackQueue.Clear();
+                        await context.RespondAsync("Player stopped and cleared Queue. . .");
+
+                    }
+                    else
+                    {
+                        await context.RespondAsync(BotChannelResponse);
+                    }
                 }
                 else
                 {
-                    await context.RespondAsync("Not joined to a channel..");
+                    {
+                        await context.RespondAsync(MemberChannelResponse);
+                    }
                 }
             }
             catch
@@ -349,39 +413,48 @@ namespace MusicBot
         {
             try
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-
-                if (botConnection != null)
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                if (memberChannel != null)
                 {
-                    if (trackQueue.Any())
+                    VoiceNextConnection botConnection = GetBotConnection(context);
+                    DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                    if (botChannel != null)
                     {
-                        string message = "Track Queue:\n";
-                        Int16 counter = 1;
-                        foreach (Track track in trackQueue.ToArray())
+                        if (trackQueue.Any())
                         {
-                            if (repeatFlag && counter == 1)
+                            string message = "Track Queue:\n";
+                            Int16 counter = 1;
+                            foreach (Track track in trackQueue.ToArray())
                             {
-                                message += $"{counter}. {track.TrackName} - {track.TrackDuration} - Repeating\n";
+                                if (repeatFlag && counter == 1)
+                                {
+                                    message += $"{counter}. {track.TrackName} - {track.TrackDuration} - Repeating\n";
+                                }
+                                else
+                                {
+                                    message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
+                                }
+                                counter++;
                             }
-                            else
-                            {
-                                message += $"{counter}. {track.TrackName} - {track.TrackDuration}\n";
-                            }
-                            counter++;
+                            await context.RespondAsync(message);
+
                         }
-                        await context.RespondAsync(message);
+                        else
+                        {
+                            await context.RespondAsync("Track queue is empty..");
+                        }
+
 
                     }
                     else
                     {
-                        await context.RespondAsync("Track queue is empty..");
+                        await context.RespondAsync(BotChannelResponse);
                     }
-
-
                 }
                 else
                 {
-                    await context.RespondAsync("Not joined to a channel..");
+                    await context.RespondAsync(MemberChannelResponse);
                 }
             }
             catch
@@ -397,32 +470,41 @@ namespace MusicBot
         {
             try
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-
-                if (botConnection != null)
+                DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+                if (memberChannel != null)
                 {
-                    if (trackQueue.Any())
+                    VoiceNextConnection botConnection = GetBotConnection(context);
+                    DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                    if (botChannel != null)
                     {
-                        StopFFMPEG();
-                        skipFlag = true;
-                        repeatFlag = false;
-                        replayFlag = false;
-                        if (trackQueue.Any() && playStatus == false)
+                        if (trackQueue.Any())
                         {
-                            playStatus = true;
-                            await PlayNext(context, trackQueue.Peek());
+                            StopFFMPEG();
+                            skipFlag = true;
+                            repeatFlag = false;
+                            replayFlag = false;
+                            if (trackQueue.Any() && playStatus == false)
+                            {
+                                playStatus = true;
+                                await PlayNext(context, trackQueue.Peek());
+                            }
+                            else playStatus = false;
                         }
-                        else playStatus = false;
+                        else
+                        {
+                            await context.RespondAsync("No tracks to skip..");
+
+                        }
                     }
                     else
                     {
-                        await context.RespondAsync("No tracks to skip..");
-
+                        await context.RespondAsync(BotChannelResponse);
                     }
                 }
                 else
                 {
-                    await context.RespondAsync("Not joined to a channel..");
+                    await context.RespondAsync(MemberChannelResponse);
                 }
 
             }
@@ -436,70 +518,87 @@ namespace MusicBot
         [Command("repeat")]
         public async Task RepeatCommand(CommandContext context)
         {
-
-            VoiceNextConnection botConnection = GetBotConnection(context);
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                if (trackQueue.Any())
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
+
+                if (botChannel != null)
                 {
-                    Track track = trackQueue.Peek();
-                    if (!repeatFlag)
+                    if (trackQueue.Any())
                     {
-                        repeatFlag = true;
-                        await context.RespondAsync($"Repeating {track.TrackName} - {track.TrackDuration}");
+                        Track track = trackQueue.Peek();
+                        if (!repeatFlag)
+                        {
+                            repeatFlag = true;
+                            await context.RespondAsync($"Repeating {track.TrackName} - {track.TrackDuration}");
+                        }
+                        else
+                        {
+                            repeatFlag = false;
+                            await context.RespondAsync($"Stopped repeating {track.TrackName} - {track.TrackDuration}");
+
+                        }
                     }
                     else
                     {
-                        repeatFlag = false;
-                        await context.RespondAsync($"Stopped repeating {track.TrackName} - {track.TrackDuration}");
-
+                        await context.RespondAsync("Track queue is empty..");
                     }
+
                 }
                 else
                 {
-                    await context.RespondAsync("Track queue is empty..");
+                    await context.RespondAsync(BotChannelResponse);
                 }
-
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
             }
         }
         [Command("replay")]
         public async Task ReplayCommand(CommandContext context)
         {
-            VoiceNextConnection botConnection = GetBotConnection(context);
-
-
-            if (botConnection != null)
+            DiscordChannel? memberChannel = context.Member?.VoiceState?.Channel;
+            if (memberChannel != null)
             {
-                if (trackQueue.Any())
-                {
-                    Track track = trackQueue.Peek();
-                    if (!replayFlag)
-                    {
-                        replayFlag = true;
-                        StopFFMPEG();
-                        await context.RespondAsync($"Replaying {track.TrackName} - {track.TrackDuration}");
+                VoiceNextConnection botConnection = GetBotConnection(context);
+                DiscordChannel? botChannel = botConnection?.TargetChannel;
 
+                if (botChannel != null)
+                {
+                    if (trackQueue.Any())
+                    {
+                        Track track = trackQueue.Peek();
+                        if (!replayFlag)
+                        {
+                            replayFlag = true;
+                            StopFFMPEG();
+                            await context.RespondAsync($"Replaying {track.TrackName} - {track.TrackDuration}");
+
+                        }
+                        else
+                        {
+                            replayFlag = false;
+                            await context.RespondAsync($"Stopped replaying {track.TrackName} - {track.TrackDuration}");
+
+                        }
                     }
                     else
                     {
-                        replayFlag = false;
-                        await context.RespondAsync($"Stopped replaying {track.TrackName} - {track.TrackDuration}");
-
+                        await context.RespondAsync("Track queue is empty..");
                     }
+
                 }
                 else
                 {
-                    await context.RespondAsync("Track queue is empty..");
+                    await context.RespondAsync(BotChannelResponse);
                 }
-
             }
             else
             {
-                await context.RespondAsync("Not joined to a channel..");
+                await context.RespondAsync(MemberChannelResponse);
             }
         }
     }
