@@ -1,6 +1,5 @@
 ﻿namespace MusicBot
 {
-    using System.Collections.Generic;
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.VoiceNext;
@@ -25,6 +24,7 @@
                 Token = Environment.GetEnvironmentVariable("TOKEN"),
                 TokenType = TokenType.Bot,
                 Intents = DiscordIntents.All,
+                MessageCacheSize = 2048,
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
             });
