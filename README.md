@@ -21,3 +21,5 @@ TBA
 - [ ] Inactivity Timeout
 - [ ] Slash Commands
 - [ ] Accept Playlists
+- [ ] Download/Stream mode
+- [ ] Enhance Search time
