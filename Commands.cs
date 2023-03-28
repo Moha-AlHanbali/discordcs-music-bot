@@ -28,13 +28,15 @@ namespace MusicBot
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
+                if (memberConnection == null)
                 {
                     await context.RespondAsync(MemberChannelResponse);
                     return;
                 }
+
+                DiscordChannel? memberChannel = memberConnection.Channel;
 
                 if (botConnection == null)
                 {
@@ -74,9 +76,9 @@ namespace MusicBot
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
+                if (memberConnection == null)
                 {
                     await context.RespondAsync(MemberChannelResponse);
                     return;
@@ -103,13 +105,13 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
-            DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
             var youtube = new Youtube();
             var youtubeClient = new YoutubeClient();
 
 
-            if (memberChannel == null)
+            if (memberConnection == null)
             {
                 await context.RespondAsync(MemberChannelResponse);
                 return;
@@ -172,49 +174,49 @@ namespace MusicBot
         [Command("play")]
         public async Task PlayCommand(CommandContext context, params string[] path)
         {
-            try
-            {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            // try
+            // {
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            DiscordChannel? botChannel = botConnection?.TargetChannel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
-                {
-                    await context.RespondAsync(MemberChannelResponse);
-                    return;
-                }
-                if (botChannel == null)
-                {
-                    await context.RespondAsync(BotChannelResponse);
-                    return;
-                }
-                if (path.Length > 0)
-                {
-                    await AddCommand(context, path);
-                    if (!trackQueue.Any())
-                    {
-                        playStatus = true;
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                    else if (trackQueue.Any() && playStatus == false)
-                    {
-                        playStatus = true;
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                }
-                else
-                {
-                    await context.RespondAsync("Please specify a track to play. . .");
-                    return;
-                }
-
-            }
-            catch
+            if (memberConnection == null)
             {
-                await context.RespondAsync($"Unable to play track...");
+                await context.RespondAsync(MemberChannelResponse);
+                return;
             }
+            if (botChannel == null)
+            {
+                await context.RespondAsync(BotChannelResponse);
+                return;
+            }
+            if (path.Length > 0)
+            {
+                await AddCommand(context, path);
+                if (!trackQueue.Any())
+                {
+                    playStatus = true;
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+                else if (trackQueue.Any() && playStatus == false)
+                {
+                    playStatus = true;
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+            }
+            else
+            {
+                await context.RespondAsync("Please specify a track to play. . .");
+                return;
+            }
+
+            // }
+            // catch
+            // {
+            //     await context.RespondAsync($"Unable to play track...");
+            // }
 
         }
         private async Task PlayNext(CommandContext context, Track track)
@@ -316,9 +318,9 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
-            DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-            if (memberChannel == null)
+            if (memberConnection == null)
             {
                 await context.RespondAsync(MemberChannelResponse);
                 return;
@@ -342,9 +344,9 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
-            DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-            if (memberChannel == null)
+            if (memberConnection == null)
             {
                 await context.RespondAsync(MemberChannelResponse);
                 return;
@@ -370,9 +372,9 @@ namespace MusicBot
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
+                if (memberConnection == null)
                 {
                     await context.RespondAsync(MemberChannelResponse);
                     return;
@@ -406,9 +408,9 @@ namespace MusicBot
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
+                if (memberConnection == null)
                 {
                     await context.RespondAsync(MemberChannelResponse);
                     return;
@@ -461,9 +463,9 @@ namespace MusicBot
             {
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberChannel == null)
+                if (memberConnection == null)
                 {
                     await context.RespondAsync(MemberChannelResponse);
                     return;
@@ -510,9 +512,9 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
-            DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-            if (memberChannel == null)
+            if (memberConnection == null)
             {
                 await context.RespondAsync(MemberChannelResponse);
                 return;
@@ -554,9 +556,9 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
-            DiscordChannel? memberChannel = context.Member?.VoiceState.Channel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-            if (memberChannel == null)
+            if (memberConnection == null)
             {
                 await context.RespondAsync(MemberChannelResponse);
                 return;

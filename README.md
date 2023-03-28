@@ -15,9 +15,11 @@ TBA
 - [x] Add the ability to Replay
 - [x] Add the ability to Repeat
 - [x] Add Queue command
-- [ ] Detect player state accurately and respond accordingly
+- [x] Detect player state accurately and respond accordingly
 - [ ] Handle Errors (Somewhat)
 - [ ] Volume Control
 - [ ] Inactivity Timeout
 - [ ] Slash Commands
 - [ ] Accept Playlists
+- [ ] Download/Stream mode
+- [ ] Enhance Search time
