@@ -1,6 +1,7 @@
 
 namespace MusicBot
 {
+    using System.IO;
     using YoutubeExplode;
     using YoutubeExplode.Common;
     using YoutubeExplode.Search;
@@ -35,10 +36,15 @@ namespace MusicBot
             var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
             var streamURL = streamInfo.Url;
-            // var stream = await yt.Videos.Streams.GetAsync(streamInfo);
-            // await yt.Videos.Streams.DownloadAsync(streamInfo, $"video.{streamInfo.Container}");
             return streamURL;
         }
 
+        public async Task YoutubeDownload(YoutubeClient yt, string songURL)
+        {
+            var song = await YoutubeGrab(yt, songURL);
+            var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            await yt.Videos.Streams.DownloadAsync(streamInfo, $"mediaTemp/{song.Title}.{streamInfo.Container}");
+        }
     }
 }
