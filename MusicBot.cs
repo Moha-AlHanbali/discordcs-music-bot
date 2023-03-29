@@ -41,7 +41,9 @@
 
             // Extend Voice Activities
             bot.UseVoiceNext();
-
+            Utils utils = new Utils();
+            utils.PrepareMediaDirectory();
+            
             await bot.ConnectAsync();
             await Task.Delay(-1);
         }

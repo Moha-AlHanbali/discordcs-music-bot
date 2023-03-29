@@ -1,7 +1,6 @@
 
 namespace MusicBot
 {
-    using System.IO;
     using YoutubeExplode;
     using YoutubeExplode.Common;
     using YoutubeExplode.Search;
@@ -10,6 +9,7 @@ namespace MusicBot
 
     class Youtube
     {
+        Utils utils = new Utils();
         public async Task<VideoSearchResult> YoutubeSearch(YoutubeClient yt, string songTitle)
         {
             var videos = await yt.Search.GetVideosAsync(songTitle);
@@ -44,6 +44,7 @@ namespace MusicBot
             var song = await YoutubeGrab(yt, songURL);
             var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            utils.ClearMediaDirectory();
             await yt.Videos.Streams.DownloadAsync(streamInfo, $"mediaTemp/{song.Title}.{streamInfo.Container}");
         }
     }
