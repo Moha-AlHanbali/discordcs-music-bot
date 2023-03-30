@@ -39,13 +39,13 @@ namespace MusicBot
             return streamURL;
         }
 
-        public async Task YoutubeDownload(YoutubeClient yt, string songURL)
+        public async Task<string> YoutubeDownload(YoutubeClient yt, string songURL, Track track)
         {
-            var song = await YoutubeGrab(yt, songURL);
             var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
             utils.ClearMediaDirectory();
-            await yt.Videos.Streams.DownloadAsync(streamInfo, $"mediaTemp/{song.Title}.{streamInfo.Container}");
+            await yt.Videos.Streams.DownloadAsync(streamInfo, $"MediaTemp/{track.TrackName}.{streamInfo.Container}");
+            return $"MediaTemp/{track.TrackName}.{streamInfo.Container}";
         }
     }
 }
