@@ -11,6 +11,7 @@ namespace MusicBot
 
     public class BotCommands : BaseCommandModule
     {
+        Utils utils = new Utils();
         Queue<Track> trackQueue = new Queue<Track>();
         Boolean playStatus = false;
         Boolean skipFlag = false;
@@ -92,6 +93,7 @@ namespace MusicBot
 
                 playStatus = false;
                 trackQueue.Clear();
+                utils.ClearMediaDirectory();
                 botConnection.Disconnect();
                 return;
             }
@@ -129,45 +131,43 @@ namespace MusicBot
                 if (trackQueue.Any())
                 {
                     await AddTrack(context, youtube, youtubeClient, joinedPath);
+                    return;
                 }
                 else if (!trackQueue.Any() && playStatus == false)
                 {
-                    playStatus = true;
                     await AddTrack(context, youtube, youtubeClient, joinedPath);
                     await PlayNext(context, trackQueue.Peek());
+                    return;
                 }
             }
 
             async Task AddTrack(CommandContext context, Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
             {
+                Track track = await DownloadYoutubeTrack(youtube, youtubeClient, joinedPath);
+                await context.RespondAsync($"Added {track.TrackName} to queue");
+                return;
+            }
+
+            async Task<Track> DownloadYoutubeTrack(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
+            {
                 if (joinedPath.StartsWith("https://www.youtube.com/"))
                 {
-                    Track track = await GrabYoutubeURL(youtube, youtubeClient, joinedPath);
-                    await context.RespondAsync($"Added {track.TrackName} to queue");
+                    var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
+                    Track track = new Track(song.Title, "", song.Duration);
+                    string mediaPath = await youtube.YoutubeDownload(youtubeClient, joinedPath, track);
+                    track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
+                    trackQueue.Enqueue(track);
+                    return track;
                 }
                 else
                 {
-                    Track track = await SearchYoutube(youtube, youtubeClient, joinedPath);
-                    await context.RespondAsync($"Added {track.TrackName} to queue");
+                    var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
+                    Track track = new Track(song.Title, "", song.Duration);
+                    string mediaPath = await youtube.YoutubeDownload(youtubeClient, song.Url, track);
+                    track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
+                    trackQueue.Enqueue(track);
+                    return track;
                 }
-            }
-
-            async Task<Track> GrabYoutubeURL(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
-            {
-                var song = await youtube.YoutubeGrab(youtubeClient, joinedPath);
-                var streamURL = await youtube.YoutubeStream(youtubeClient, joinedPath);
-                Track track = new Track(song.Title, streamURL, song.Duration);
-                trackQueue.Enqueue(track);
-                return track;
-            }
-
-            async Task<Track> SearchYoutube(Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
-            {
-                var song = await youtube.YoutubeSearch(youtubeClient, joinedPath);
-                var streamURL = await youtube.YoutubeStream(youtubeClient, song.Url);
-                Track track = new Track(song.Title, streamURL, song.Duration);
-                trackQueue.Enqueue(track);
-                return track;
             }
         }
 
@@ -195,13 +195,11 @@ namespace MusicBot
                 await AddCommand(context, path);
                 if (!trackQueue.Any())
                 {
-                    playStatus = true;
                     await PlayNext(context, trackQueue.Peek());
                     return;
                 }
                 else if (trackQueue.Any() && playStatus == false)
                 {
-                    playStatus = true;
                     await PlayNext(context, trackQueue.Peek());
                     return;
                 }
@@ -224,6 +222,7 @@ namespace MusicBot
             playStatus = true;
             if (!repeatFlag) await context.RespondAsync($"Playing {track.TrackName} - {track.TrackDuration} ♪");
             await PlayAudio(context, track.TrackURL);
+
             if (replayFlag)
             {
                 replayFlag = false;
@@ -236,28 +235,37 @@ namespace MusicBot
             if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
             else playStatus = false;
             repeatFlag = false;
+            utils.ClearMediaDirectory();
             return;
         }
 
-
-        private async Task PlayAudio(CommandContext context, string songURL)
+        private async Task PlayAudio(CommandContext context, string mediaPath)
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             var transmit = botConnection.GetTransmitSink();
-            var pcm = ConvertAudioToPcm(songURL);
+            ConvertWEBMtoMP3(mediaPath);
+            var pcm = ConvertAudioToPcm(mediaPath);
             await pcm.CopyToAsync(transmit);
             await pcm.DisposeAsync();
             return;
         }
-
-        private Stream ConvertAudioToPcm(string streamURL)
+        private void ConvertWEBMtoMP3(string mediaPath)
         {
             Process? ffmpeg = Process.Start(new ProcessStartInfo
             {
                 FileName = "ffmpeg",
-                // Arguments = $@"-i ""{filePath}"" -ac 2 -f s16le -ar 48000 pipe:1",
-                Arguments = $@"-reconnect 1 -reconnect_at_eof 1 -reconnect_streamed 1 -reconnect_delay_max 2 -i {streamURL} -ac 2 -f s16le -ar 48000 pipe:1",
+                Arguments = $@"-i ""{mediaPath}"" -vn -ab 128k -ar 48000 -y ""{mediaPath.Split(".webm")[0]}.mp3"" ",
+                RedirectStandardOutput = true,
+                UseShellExecute = false
+            });
+        }
 
+        private Stream ConvertAudioToPcm(string mediaPath)
+        {
+            Process? ffmpeg = Process.Start(new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $@"-i ""{mediaPath}"" -ac 2 -f s16le -ar 48000 pipe:1",
                 RedirectStandardOutput = true,
                 UseShellExecute = false
             });
@@ -389,6 +397,7 @@ namespace MusicBot
                 playStatus = false;
                 StopFFMPEG();
                 trackQueue.Clear();
+                utils.ClearMediaDirectory();
                 await context.RespondAsync("Player stopped and cleared Queue. . .");
                 return;
             }
@@ -485,7 +494,6 @@ namespace MusicBot
                     replayFlag = false;
                     if (trackQueue.Any() && playStatus == false)
                     {
-                        playStatus = true;
                         await PlayNext(context, trackQueue.Peek());
                     }
                     else playStatus = false;

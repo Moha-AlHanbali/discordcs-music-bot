@@ -9,6 +9,7 @@ namespace MusicBot
 
     class Youtube
     {
+        Utils utils = new Utils();
         public async Task<VideoSearchResult> YoutubeSearch(YoutubeClient yt, string songTitle)
         {
             var videos = await yt.Search.GetVideosAsync(songTitle);
@@ -35,10 +36,16 @@ namespace MusicBot
             var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
             var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
             var streamURL = streamInfo.Url;
-            // var stream = await yt.Videos.Streams.GetAsync(streamInfo);
-            // await yt.Videos.Streams.DownloadAsync(streamInfo, $"video.{streamInfo.Container}");
             return streamURL;
         }
 
+        public async Task<string> YoutubeDownload(YoutubeClient yt, string songURL, Track track)
+        {
+            var streamManifest = await yt.Videos.Streams.GetManifestAsync(songURL);
+            var streamInfo = streamManifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            utils.ClearMediaDirectory();
+            await yt.Videos.Streams.DownloadAsync(streamInfo, $"MediaTemp/{track.TrackName}.{streamInfo.Container}");
+            return $"MediaTemp/{track.TrackName}.{streamInfo.Container}";
+        }
     }
 }

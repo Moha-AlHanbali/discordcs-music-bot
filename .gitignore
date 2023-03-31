@@ -421,4 +421,5 @@ obj/
 .history
 .ionide
 .env
+/MediaTemp
 # End of https://www.toptal.com/developers/gitignore/api/csharp,visualstudiocode,dotnetcore
