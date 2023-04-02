@@ -16,10 +16,17 @@ TBA
 - [x] Add the ability to Repeat
 - [x] Add Queue command
 - [x] Detect player state accurately and respond accordingly
-- [ ] Handle Errors (Somewhat)
-- [ ] Volume Control
+- [x] Accept Playlists
+- [x] Download ~~/Stream~~ mode
 - [ ] Inactivity Timeout
 - [ ] Slash Commands
-- [ ] Accept Playlists
-- [x] Download ~~/Stream~~ mode
-- [ ] Enhance Search time
+- [ ] Volume Control
+- [ ] Handle Errors (Somewhat)
+
+## Improvements
+
+- [x] Enhance Search time
+- [ ] Enhance Download performance
+- [ ] Detect generic playlists
+- [ ] Add Track Search results
+- [ ] Add Control Buttons
