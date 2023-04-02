@@ -12,11 +12,11 @@ namespace MusicBot
         Utils utils = new Utils();
         public async Task<VideoSearchResult> YoutubeSearch(YoutubeClient yt, string songTitle)
         {
-            var videos = await yt.Search.GetVideosAsync(songTitle);
+            var videos = await yt.Search.GetVideosAsync(songTitle).CollectAsync(1);
             return videos[0];
 
-            // For Future Enhancement
-            // foreach (VideoSearchResult video in videos.Take(5))
+            // For Future Enhancement:
+            // foreach (VideoSearchResult video in videos)
             // {
             //     var id = video.Id;
             //     var title = video.Title;
