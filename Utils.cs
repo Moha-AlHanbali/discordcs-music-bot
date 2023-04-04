@@ -1,7 +1,7 @@
 namespace MusicBot
 {
     using System.IO;
-    class Utils
+    public class Utils
     {
         public void CreateMediaDirectory()
         {

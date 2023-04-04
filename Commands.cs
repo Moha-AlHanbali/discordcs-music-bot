@@ -8,18 +8,30 @@ namespace MusicBot
     using DSharpPlus.CommandsNext;
     using DSharpPlus.CommandsNext.Attributes;
     using YoutubeExplode;
-
+    using MusicBot;
     public class BotCommands : BaseCommandModule
     {
-        Utils utils = new Utils();
-        Queue<Track> trackQueue = new Queue<Track>();
-        Boolean playStatus = false;
-        Boolean skipFlag = false;
-        Boolean repeatFlag = false;
-        Boolean replayFlag = false;
+        Utils utils;
+        Queue<Track> trackQueue;
+        Boolean playStatus;
+        Boolean skipFlag;
+        Boolean repeatFlag;
+        Boolean replayFlag;
+        String botChannelResponse;
+        String memberChannelResponse;
 
-        private const String BotChannelResponse = "Bot must join a voice channel to accept commands";
-        private const String MemberChannelResponse = "You have to be in a voice channel to use bot commands";
+        public BotCommands(Utils utils, Queue<Track> trackQueue, MusicBot.Program.BotCommandsOptions options)
+        {
+            this.utils = utils;
+            this.trackQueue = trackQueue;
+            this.playStatus = options.playStatus;
+            this.skipFlag = options.skipFlag;
+            this.repeatFlag = options.repeatFlag;
+            this.replayFlag = options.replayFlag;
+            this.botChannelResponse = options.botChannelResponse;
+            this.memberChannelResponse = options.memberChannelResponse;
+        }
+
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context)
@@ -33,7 +45,7 @@ namespace MusicBot
 
                 if (memberConnection == null)
                 {
-                    await context.RespondAsync(MemberChannelResponse);
+                    await context.RespondAsync(memberChannelResponse);
                     return;
                 }
 
@@ -81,13 +93,13 @@ namespace MusicBot
 
                 if (memberConnection == null)
                 {
-                    await context.RespondAsync(MemberChannelResponse);
+                    await context.RespondAsync(memberChannelResponse);
                     return;
                 }
 
                 if (botChannel == null)
                 {
-                    await context.RespondAsync(BotChannelResponse);
+                    await context.RespondAsync(botChannelResponse);
                     return;
                 }
 
@@ -115,13 +127,13 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
 
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
 
@@ -197,12 +209,12 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
             if (path.Length > 0)
@@ -353,13 +365,13 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
 
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
 
@@ -379,13 +391,13 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
 
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
 
@@ -407,13 +419,13 @@ namespace MusicBot
 
                 if (memberConnection == null)
                 {
-                    await context.RespondAsync(MemberChannelResponse);
+                    await context.RespondAsync(memberChannelResponse);
                     return;
                 }
 
                 if (botChannel == null)
                 {
-                    await context.RespondAsync(BotChannelResponse);
+                    await context.RespondAsync(botChannelResponse);
                     return;
                 }
 
@@ -444,13 +456,13 @@ namespace MusicBot
 
                 if (memberConnection == null)
                 {
-                    await context.RespondAsync(MemberChannelResponse);
+                    await context.RespondAsync(memberChannelResponse);
                     return;
                 }
 
                 if (botChannel == null)
                 {
-                    await context.RespondAsync(BotChannelResponse);
+                    await context.RespondAsync(botChannelResponse);
                     return;
                 }
 
@@ -499,13 +511,13 @@ namespace MusicBot
 
                 if (memberConnection == null)
                 {
-                    await context.RespondAsync(MemberChannelResponse);
+                    await context.RespondAsync(memberChannelResponse);
                     return;
                 }
 
                 if (botChannel == null)
                 {
-                    await context.RespondAsync(BotChannelResponse);
+                    await context.RespondAsync(botChannelResponse);
                     return;
                 }
 
@@ -547,13 +559,13 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
 
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
 
@@ -591,13 +603,13 @@ namespace MusicBot
 
             if (memberConnection == null)
             {
-                await context.RespondAsync(MemberChannelResponse);
+                await context.RespondAsync(memberChannelResponse);
                 return;
             }
 
             if (botChannel == null)
             {
-                await context.RespondAsync(BotChannelResponse);
+                await context.RespondAsync(botChannelResponse);
                 return;
             }
 
