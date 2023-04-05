@@ -8,7 +8,7 @@ namespace MusicBot
     using DSharpPlus.CommandsNext;
     using DSharpPlus.CommandsNext.Attributes;
     using YoutubeExplode;
-    using MusicBot;
+
     public class BotCommands : BaseCommandModule
     {
         Utils utils;
@@ -37,42 +37,44 @@ namespace MusicBot
         public async Task JoinCommand(CommandContext context)
 
         {
-            try
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
-
-                if (memberConnection == null)
+                try
                 {
-                    await context.RespondAsync(memberChannelResponse);
+                    VoiceNextConnection botConnection = GetBotConnection(context);
+                    DiscordChannel? botChannel = botConnection?.TargetChannel;
+                    DiscordVoiceState? memberConnection = context.Member?.VoiceState;
+
+                    if (memberConnection == null)
+                    {
+                        await context.RespondAsync(memberChannelResponse);
+                        return;
+                    }
+
+                    DiscordChannel? memberChannel = memberConnection.Channel;
+
+                    if (botConnection == null)
+                    {
+                        await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
+                        await memberChannel.ConnectAsync();
+                        return;
+                    }
+
+                    if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
+                    {
+                        await context.RespondAsync($"Moving to {memberChannel?.Name} . . .");
+                        botConnection.Disconnect();
+                        await memberChannel.ConnectAsync();
+                        return;
+
+                    }
+
+                    await context.RespondAsync($"Already joined to {memberChannel?.Name} channel");
                     return;
                 }
-
-                DiscordChannel? memberChannel = memberConnection.Channel;
-
-                if (botConnection == null)
+                catch
                 {
-                    await context.RespondAsync($"Joining {memberChannel?.Name} . . .");
-                    await memberChannel.ConnectAsync();
-                    return;
+                    await context.RespondAsync("Could not join channel..");
                 }
-
-                if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
-                {
-                    await context.RespondAsync($"Moving to {memberChannel?.Name} . . .");
-                    botConnection.Disconnect();
-                    await memberChannel.ConnectAsync();
-                    return;
-
-                }
-
-                await context.RespondAsync($"Already joined to {memberChannel?.Name} channel");
-                return;
-            }
-            catch
-            {
-                await context.RespondAsync("Could not join channel..");
             }
         }
 
@@ -106,7 +108,7 @@ namespace MusicBot
                 playStatus = false;
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
-                botConnection.Disconnect();
+                botConnection?.Disconnect();
                 return;
             }
             catch

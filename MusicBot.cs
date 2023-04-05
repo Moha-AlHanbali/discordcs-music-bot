@@ -42,7 +42,7 @@
             Queue<Track> botTrackQueue = new Queue<Track>();
             Utils botUtils = new Utils();
 
-            var services = new ServiceCollection()
+            var coreServices = new ServiceCollection()
                 .AddSingleton(typeof(Utils), new Utils())
                 .AddSingleton(typeof(Queue<Track>), new Queue<Track>())
                 .AddSingleton(new BotCommandsOptions())
@@ -53,10 +53,22 @@
                 })
                 .BuildServiceProvider();
 
+
+            var commandsServices = new ServiceCollection()
+                .AddSingleton(typeof(Utils), new Utils())
+                .AddSingleton(typeof(Queue<Track>), new Queue<Track>())
+                .AddSingleton(new BotCommandsOptions())
+                .AddSingleton<BotCommands>(serviceProvider =>
+                {
+                    var options = serviceProvider.GetService<BotCommandsOptions>();
+                    return new BotCommands(new Utils(), new Queue<Track>(), new BotCommandsOptions());
+                })
+                .BuildServiceProvider();
+                
             // Extend Commands
             var commands = bot.UseCommandsNext(new CommandsNextConfiguration()
             {
-                Services = services,
+                Services = commandsServices,
                 StringPrefixes = new[] { "!" }
             });
 
@@ -64,7 +76,7 @@
 
             var slashCommands = bot.UseSlashCommands(new SlashCommandsConfiguration()
             {
-                Services = services,
+                Services = commandsServices,
             });
             slashCommands.RegisterCommands<SlashCommands>();
 
