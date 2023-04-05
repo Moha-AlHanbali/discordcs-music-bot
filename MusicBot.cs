@@ -41,44 +41,26 @@
 
             Queue<Track> botTrackQueue = new Queue<Track>();
             Utils botUtils = new Utils();
-
-            var coreServices = new ServiceCollection()
-                .AddSingleton(typeof(Utils), new Utils())
-                .AddSingleton(typeof(Queue<Track>), new Queue<Track>())
-                .AddSingleton(new BotCommandsOptions())
-                .AddSingleton<BotCommands>(serviceProvider =>
-                {
-                    var options = serviceProvider.GetService<BotCommandsOptions>();
-                    return new BotCommands(new Utils(), new Queue<Track>(), new BotCommandsOptions());
-                })
-                .BuildServiceProvider();
+            CommandsCore commandsCore = new CommandsCore(botUtils, botTrackQueue, new BotCommandsOptions());
 
 
             var commandsServices = new ServiceCollection()
-                .AddSingleton(typeof(Utils), new Utils())
-                .AddSingleton(typeof(Queue<Track>), new Queue<Track>())
-                .AddSingleton(new BotCommandsOptions())
-                .AddSingleton<BotCommands>(serviceProvider =>
-                {
-                    var options = serviceProvider.GetService<BotCommandsOptions>();
-                    return new BotCommands(new Utils(), new Queue<Track>(), new BotCommandsOptions());
-                })
+                .AddSingleton(typeof(CommandsCore), commandsCore)
                 .BuildServiceProvider();
-                
+
             // Extend Commands
             var commands = bot.UseCommandsNext(new CommandsNextConfiguration()
             {
                 Services = commandsServices,
                 StringPrefixes = new[] { "!" }
             });
-
             commands.RegisterCommands<BotCommands>();
 
-            var slashCommands = bot.UseSlashCommands(new SlashCommandsConfiguration()
-            {
-                Services = commandsServices,
-            });
-            slashCommands.RegisterCommands<SlashCommands>();
+            // var slashCommands = bot.UseSlashCommands(new SlashCommandsConfiguration()
+            // {
+            //     Services = commandsServices,
+            // });
+            // slashCommands.RegisterCommands<SlashCommands>();
 
             // Extend Voice Activities
             bot.UseVoiceNext();

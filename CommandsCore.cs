@@ -167,7 +167,7 @@ namespace MusicBot
         /// <returns>A task representing the asynchronous operation.</returns>
         private async Task ReplyToCommand(CommandContext context, string message)
         {
-            await ReplyToCommand(context, message);
+            await context.RespondAsync(message);
             return;
         }
 
