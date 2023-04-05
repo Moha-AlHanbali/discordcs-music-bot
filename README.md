@@ -19,7 +19,7 @@ TBA
 - [x] Accept Playlists
 - [x] Download ~~/Stream~~ mode
 - [ ] Inactivity Timeout
-- [ ] Slash Commands
+- [x] Slash Commands
 - [ ] Volume Control
 - [ ] Handle Errors (Somewhat)
 
@@ -30,3 +30,4 @@ TBA
 - [ ] Detect generic playlists
 - [ ] Add Track Search results
 - [ ] Add Control Buttons
+- [ ] Refactor Commands Core
