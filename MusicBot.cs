@@ -56,11 +56,11 @@
             });
             commands.RegisterCommands<BotCommands>();
 
-            // var slashCommands = bot.UseSlashCommands(new SlashCommandsConfiguration()
-            // {
-            //     Services = commandsServices,
-            // });
-            // slashCommands.RegisterCommands<SlashCommands>();
+            var slashCommands = bot.UseSlashCommands(new SlashCommandsConfiguration()
+            {
+                Services = commandsServices,
+            });
+            slashCommands.RegisterCommands<SlashCommands>();
 
             // Extend Voice Activities
             bot.UseVoiceNext();

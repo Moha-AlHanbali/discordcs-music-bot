@@ -185,6 +185,21 @@ namespace MusicBot
             return;
         }
 
+        private async Task InitiateSlashCommand(InteractionContext context)
+        {
+            await context.CreateResponseAsync(InteractionResponseType.DeferredChannelMessageWithSource);
+            return;
+        }
+        private async Task EndSlashCommand(InteractionContext context, String message)
+        {
+            await context.EditResponseAsync(new DiscordWebhookBuilder().WithContent(message));
+            return;
+        }
+        private async Task FollowUpOnSlashCommand(InteractionContext context, String message)
+        {
+            await context.FollowUpAsync(new DiscordFollowupMessageBuilder().WithContent(message));
+            return;
+        }
         /// <summary>
         /// Returns the VoiceNext connection for the current guild in a CommandContext.
         /// </summary>
@@ -266,6 +281,7 @@ namespace MusicBot
         /// <param name="joinedPath">The YouTube URL or search query</param>
         async Task AddTrack(InteractionContext context, Youtube youtube, YoutubeClient youtubeClient, String joinedPath)
         {
+            await InitiateSlashCommand(context);
             if (joinedPath.StartsWith("https://www.youtube.com/"))
             {
                 if (joinedPath.StartsWith("https://www.youtube.com/playlist?"))
@@ -273,7 +289,7 @@ namespace MusicBot
                     var playlist = await youtubeClient.Playlists.GetAsync(joinedPath);
 
                     var videoList = await youtube.YoutubeGrabList(youtubeClient, joinedPath);
-                    await ReplyToCommand(context, $"Fetching tracks from {playlist.Title}...");
+                    await FollowUpOnSlashCommand(context, $"Fetching tracks from {playlist.Title}...");
                     foreach (var video in videoList)
                     {
                         Track track = new Track(video.Title, "", video.Duration);
@@ -281,7 +297,7 @@ namespace MusicBot
                         track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                         trackQueue.Enqueue(track);
                     }
-                    await ReplyToCommand(context, $"Added {videoList.Count} tracks from {playlist.Title} to queue");
+                    await FollowUpOnSlashCommand(context, $"Added {videoList.Count} tracks from {playlist.Title} to queue");
                     return;
                 }
                 else
@@ -291,7 +307,7 @@ namespace MusicBot
                     string mediaPath = await youtube.YoutubeDownload(youtubeClient, joinedPath, track);
                     track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                     trackQueue.Enqueue(track);
-                    await ReplyToCommand(context, $"Added {track.TrackName} to queue");
+                    await FollowUpOnSlashCommand(context, $"Added {track.TrackName} to queue");
                     return;
                 }
             }
@@ -302,7 +318,7 @@ namespace MusicBot
                 string mediaPath = await youtube.YoutubeDownload(youtubeClient, song.Url, track);
                 track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                 trackQueue.Enqueue(track);
-                await ReplyToCommand(context, $"Added {track.TrackName} to queue");
+                await FollowUpOnSlashCommand(context, $"Added {track.TrackName} to queue");
                 return;
             }
         }
@@ -352,7 +368,8 @@ namespace MusicBot
         private async Task PlayNext(InteractionContext context, Track track)
         {
             playStatus = true;
-            if (!repeatFlag) await ReplyToCommand(context, $"Playing {track.TrackName} - {track.TrackDuration} ♪");
+            DiscordMessage message = await context.GetOriginalResponseAsync();
+            await FollowUpOnSlashCommand(context, $"Playing {track.TrackName} - {track.TrackDuration} ♪");
             await PlayAudio(context, track.TrackURL);
 
             if (replayFlag)
@@ -364,12 +381,12 @@ namespace MusicBot
             if (skipFlag)
             {
                 utils.PurgeFile(track.TrackURL);
-                await ReplyToCommand(context, $"Skipped {trackQueue.Dequeue().TrackName}");
+                await FollowUpOnSlashCommand(context, $"Skipped {trackQueue.Dequeue().TrackName}");
             }
             else if (!repeatFlag)
             {
                 utils.PurgeFile(track.TrackURL);
-                await ReplyToCommand(context, $"Finished playing {trackQueue.Dequeue().TrackName}");
+                await FollowUpOnSlashCommand(context, $"Finished playing {trackQueue.Dequeue().TrackName}");
             }
             skipFlag = false;
             if (trackQueue.Any()) await PlayNext(context, trackQueue.Peek());
@@ -465,6 +482,8 @@ namespace MusicBot
             {
                 try
                 {
+                    await InitiateSlashCommand(context);
+
                     VoiceNextConnection botConnection = GetBotConnection(context);
                     DiscordChannel? botChannel = botConnection?.TargetChannel;
                     DiscordVoiceState? memberConnection = context.Member?.VoiceState;
@@ -479,14 +498,14 @@ namespace MusicBot
 
                     if (botConnection == null)
                     {
-                        await ReplyToCommand(context, $"Joining {memberChannel?.Name} . . .");
+                        await EndSlashCommand(context, $"Joining {memberChannel?.Name} . . .");
                         await memberChannel.ConnectAsync();
                         return;
                     }
 
                     if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
                     {
-                        await ReplyToCommand(context, $"Moving to {memberChannel?.Name} . . .");
+                        await EndSlashCommand(context, $"Moving to {memberChannel?.Name} . . .");
                         botConnection.Disconnect();
                         await memberChannel.ConnectAsync();
                         return;
@@ -526,6 +545,7 @@ namespace MusicBot
                 playStatus = false;
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
+                await ReplyToCommand(context, $"Leaving {botChannel.Name} channel");
                 botConnection?.Disconnect();
                 return;
             }
@@ -538,6 +558,8 @@ namespace MusicBot
         {
             try
             {
+                await InitiateSlashCommand(context);
+
                 VoiceNextConnection botConnection = GetBotConnection(context);
                 DiscordChannel? botChannel = botConnection?.TargetChannel;
                 DiscordVoiceState? memberConnection = context.Member?.VoiceState;
@@ -557,6 +579,7 @@ namespace MusicBot
                 playStatus = false;
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
+                await EndSlashCommand(context, $"Leaving {botChannel.Name} channel");
                 botConnection?.Disconnect();
                 return;
             }
@@ -646,93 +669,93 @@ namespace MusicBot
 
         public async Task PlayCommand(CommandContext context, params string[] path)
         {
-            try
+            // try
+            // {
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            DiscordChannel? botChannel = botConnection?.TargetChannel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
+
+            if (memberConnection == null)
             {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
-
-                if (memberConnection == null)
-                {
-                    await ReplyToCommand(context, memberChannelResponse);
-                    return;
-                }
-                if (botChannel == null)
-                {
-                    await ReplyToCommand(context, botChannelResponse);
-                    return;
-                }
-                if (path.Length > 0)
-                {
-                    await AddCommand(context, path);
-                    if (!trackQueue.Any())
-                    {
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                    else if (trackQueue.Any() && playStatus == false)
-                    {
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                }
-                else
-                {
-                    await ReplyToCommand(context, "Please specify a track to play. . .");
-                    return;
-                }
-
+                await ReplyToCommand(context, memberChannelResponse);
+                return;
             }
-            catch
+            if (botChannel == null)
             {
-                await ReplyToCommand(context, $"Unable to play track...");
+                await ReplyToCommand(context, botChannelResponse);
+                return;
+            }
+            if (path.Length > 0)
+            {
+                await AddCommand(context, path);
+                if (!trackQueue.Any())
+                {
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+                else if (trackQueue.Any() && playStatus == false)
+                {
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+            }
+            else
+            {
+                await ReplyToCommand(context, "Please specify a track to play. . .");
+                return;
             }
 
+            // }
+            // catch
+            // {
+            //     await ReplyToCommand(context, $"Unable to play track...");
+            // }
         }
 
         public async Task PlayCommand(InteractionContext context, params string[] path)
         {
-            try
-            {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
+            // try
+            // {
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            DiscordChannel? botChannel = botConnection?.TargetChannel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
 
-                if (memberConnection == null)
-                {
-                    await ReplyToCommand(context, memberChannelResponse);
-                    return;
-                }
-                if (botChannel == null)
-                {
-                    await ReplyToCommand(context, botChannelResponse);
-                    return;
-                }
-                if (path.Length > 0)
-                {
-                    await AddCommand(context, path);
-                    if (!trackQueue.Any())
-                    {
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                    else if (trackQueue.Any() && playStatus == false)
-                    {
-                        await PlayNext(context, trackQueue.Peek());
-                        return;
-                    }
-                }
-                else
-                {
-                    await ReplyToCommand(context, "Please specify a track to play. . .");
-                    return;
-                }
-
-            }
-            catch
+            if (memberConnection == null)
             {
-                await ReplyToCommand(context, $"Unable to play track...");
+                await ReplyToCommand(context, memberChannelResponse);
+                return;
             }
+            if (botChannel == null)
+            {
+                await ReplyToCommand(context, botChannelResponse);
+                return;
+            }
+            if (path.Length > 0)
+            {
+                await AddCommand(context, path);
+
+                if (!trackQueue.Any())
+                {
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+                else if (trackQueue.Any() && playStatus == false)
+                {
+                    await PlayNext(context, trackQueue.Peek());
+                    return;
+                }
+            }
+            else
+            {
+                await ReplyToCommand(context, "Please specify a track to play. . .");
+                return;
+            }
+
+            // }
+            // catch
+            // {
+            //     await ReplyToCommand(context, $"Unable to play track...");
+            // }
 
         }
 
@@ -1045,9 +1068,6 @@ namespace MusicBot
                     await ReplyToCommand(context, "No tracks to skip..");
                     return;
                 }
-
-
-
             }
             catch
             {
@@ -1093,9 +1113,6 @@ namespace MusicBot
                     await ReplyToCommand(context, "No tracks to skip..");
                     return;
                 }
-
-
-
             }
             catch
             {
@@ -1232,6 +1249,7 @@ namespace MusicBot
         }
         public async Task ReplayCommand(InteractionContext context)
         {
+            await InitiateSlashCommand(context);
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
             DiscordVoiceState? memberConnection = context.Member?.VoiceState;

@@ -2,88 +2,83 @@
 namespace MusicBot
 {
     using DSharpPlus.SlashCommands;
-    using DSharpPlus.CommandsNext;
-    using System.IO;
-    using System.Diagnostics;
-    using DSharpPlus.Entities;
-    using DSharpPlus.VoiceNext;
-    using DSharpPlus.CommandsNext.Attributes;
-    using YoutubeExplode;
-    using DSharpPlus;
 
     public class SlashCommands : ApplicationCommandModule
     {
-        Utils utils;
-        Queue<Track> trackQueue;
-        Boolean playStatus;
-        Boolean skipFlag;
-        Boolean repeatFlag;
-        Boolean replayFlag;
-        String botChannelResponse;
-        String memberChannelResponse;
+        CommandsCore commandsCore;
 
-        public SlashCommands(Utils utils, Queue<Track> trackQueue, MusicBot.Program.BotCommandsOptions options)
-        {
-            this.utils = utils;
-            this.trackQueue = trackQueue;
-            this.playStatus = options.playStatus;
-            this.skipFlag = options.skipFlag;
-            this.repeatFlag = options.repeatFlag;
-            this.replayFlag = options.replayFlag;
-            this.botChannelResponse = options.botChannelResponse;
-            this.memberChannelResponse = options.memberChannelResponse;
-        }
 
-        private async Task ReplyToCommand(InteractionContext context, string message)
+        public SlashCommands(CommandsCore commandsCore)
         {
-            await context.CreateResponseAsync(InteractionResponseType.ChannelMessageWithSource, new DiscordInteractionResponseBuilder().WithContent((message)));
-            return;
-        }
-
-        private VoiceNextConnection GetBotConnection(InteractionContext context)
-        {
-            var voiceNext = context.Client.GetVoiceNext();
-            return voiceNext.GetConnection(context.Guild);
+            this.commandsCore = commandsCore;
         }
 
         [SlashCommand("join", "A slash command that instructs the bot to join your voice channel.")]
         public async Task JoinCommand(InteractionContext context)
         {
-            try
-            {
-                VoiceNextConnection botConnection = GetBotConnection(context);
-                DiscordChannel? botChannel = botConnection?.TargetChannel;
-                DiscordVoiceState? memberConnection = context.Member?.VoiceState;
+            await commandsCore.JoinCommand(context);
+        }
 
-                if (memberConnection == null)
-                {
-                    await ReplyToCommand(context, memberChannelResponse);
-                    return;
-                }
+        [SlashCommand("leave", "A slash command that instructs the bot to leave its' current voice channel.")]
+        public async Task LeaveCommand(InteractionContext context)
+        {
+            await commandsCore.LeaveCommand(context);
+        }
 
-                DiscordChannel? memberChannel = memberConnection.Channel;
+        [SlashCommand("add", "A slash command that instructs the bot to add a specific track.")]
+        public async Task AddCommand(InteractionContext context, [Option("track", "Track title or Youtube URL")] string path)
+        {
+            await commandsCore.AddCommand(context, path);
+        }
 
-                if (botConnection == null)
-                {
-                    await ReplyToCommand(context, $"Joining {memberChannel?.Name} . . .");
-                    await memberChannel.ConnectAsync();
-                    return;
-                }
 
-                if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
-                {
-                    await ReplyToCommand(context, $"Moving to {memberChannel?.Name} . . .");
-                    botConnection.Disconnect();
-                    await memberChannel.ConnectAsync();
-                    return;
-                }
-                await ReplyToCommand(context, $"Already joined to {memberChannel?.Name} channel");
-                return;
-            }
-            catch
-            {
-                await ReplyToCommand(context, "Could not join channel..");
-            }
+        [SlashCommand("play", "A slash command that instructs the bot to play a specific track.")]
+        public async Task PlayCommand(InteractionContext context, [Option("track", "Track title or Youtube URL")] string path)
+        {
+            await commandsCore.PlayCommand(context, path);
+        }
+
+
+        [SlashCommand("pause", "A slash command that instructs the bot to pause current track.")]
+        public async Task PauseCommand(InteractionContext context)
+
+        {
+            await commandsCore.PauseCommand(context);
+        }
+
+        [SlashCommand("resume", "A slash command that instructs the bot to resume a paused track.")]
+        public async Task ResumeCommand(InteractionContext context)
+        {
+            await commandsCore.ResumeCommand(context);
+        }
+
+        [SlashCommand("stop", "A slash command that instructs the bot to stop playing completely.")]
+        public async Task StopCommand(InteractionContext context)
+        {
+            await commandsCore.StopCommand(context);
+        }
+
+        [SlashCommand("queue", "A slash command that instructs the bot to show track queue")]
+        public async Task QueueCommand(InteractionContext context)
+        {
+            await commandsCore.QueueCommand(context);
+        }
+
+        [SlashCommand("skip", "A slash command that instructs the bot to skip current track.")]
+        public async Task SkipCommand(InteractionContext context)
+        {
+            await commandsCore.SkipCommand(context);
+        }
+
+        [SlashCommand("repeat", "A slash command that instructs the bot to repeat/stop repeating current track.")]
+        public async Task RepeatCommand(InteractionContext context)
+        {
+            await commandsCore.RepeatCommand(context);
+        }
+        [SlashCommand("replay", "A slash command that instructs the bot to repeat current track.")]
+        public async Task ReplayCommand(InteractionContext context)
+        {
+            await commandsCore.ReplayCommand(context);
         }
     }
 }
