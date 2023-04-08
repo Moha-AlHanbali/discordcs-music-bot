@@ -20,7 +20,7 @@ TBA
 - [x] Download ~~/Stream~~ mode
 - [ ] Inactivity Timeout
 - [x] Slash Commands
-- [ ] Volume Control
+- [x] Volume Control
 - [ ] Handle Errors (Somewhat)
 
 ## Improvements
