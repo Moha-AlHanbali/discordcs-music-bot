@@ -81,5 +81,10 @@ namespace MusicBot
         {
             await commandsCore.ReplayCommand(context);
         }
+        [Command("volume")]
+        public async Task VolumeCommand(CommandContext context, int volume)
+        {
+            await commandsCore.VolumeCommand(context, volume);
+        }
     }
 }
