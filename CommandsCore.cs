@@ -1291,7 +1291,38 @@ namespace MusicBot
         }
 
 
-        public async Task VolumeCommand(CommandContext context, int volume = 100)
+        public async Task VolumeCommand(CommandContext context, long volume = 100)
+        {
+            VoiceNextConnection botConnection = GetBotConnection(context);
+            DiscordChannel? botChannel = botConnection?.TargetChannel;
+            DiscordVoiceState? memberConnection = context.Member?.VoiceState;
+
+            if (memberConnection == null)
+            {
+                await ReplyToCommand(context, memberChannelResponse);
+                return;
+            }
+
+            if (botChannel == null)
+            {
+                await ReplyToCommand(context, botChannelResponse);
+                return;
+            }
+            if (volume < 0 || volume > 100)
+            {
+                await ReplyToCommand(context, "Volume needs to be between 0 and 100% inclusive");
+                return;
+            }
+
+            if (botConnection != null)
+            {
+                VoiceTransmitSink transmitStream = botConnection.GetTransmitSink();
+                transmitStream.VolumeModifier = (double)volume / 100;
+                await ReplyToCommand(context, $"Volume set to {volume}%");
+                return;
+            }
+        }
+        public async Task VolumeCommand(InteractionContext context, long volume = 100)
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             DiscordChannel? botChannel = botConnection?.TargetChannel;
