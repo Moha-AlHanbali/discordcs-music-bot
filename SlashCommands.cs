@@ -80,5 +80,10 @@ namespace MusicBot
         {
             await commandsCore.ReplayCommand(context);
         }
+        [SlashCommand("volume", "A slash command that instructs the bot to set the player volume.")]
+        public async Task VolumeCommand(InteractionContext context, [Option("volume", "Volume level between 0 and 100% inclusive")] long volume)
+        {
+            await commandsCore.VolumeCommand(context, volume);
+        }
     }
 }
