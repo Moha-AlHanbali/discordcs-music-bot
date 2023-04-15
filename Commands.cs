@@ -13,6 +13,11 @@ namespace MusicBot
             this.commandsCore = commandsCore;
         }
 
+        public override async Task BeforeExecutionAsync(CommandContext context)
+        {
+            commandsCore.UpdateLatestActivity();
+            await base.BeforeExecutionAsync(context);
+        }
 
         [Command("join")]
         public async Task JoinCommand(CommandContext context)

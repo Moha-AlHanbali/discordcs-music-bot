@@ -1,5 +1,6 @@
 ﻿namespace MusicBot
 {
+    using System.Diagnostics;
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.VoiceNext;
@@ -31,17 +32,13 @@
                 MinimumLogLevel = LogLevel.Debug
             });
 
-            // Dependency Injection
-            // var services = new ServiceCollection()
-            // .AddSingleton(typeof(Boolean), false)
-            // .AddSingleton(typeof(String), "")
-            // .AddSingleton(typeof(Utils), new Utils())
-            // .AddSingleton(typeof(Queue<Track>), new Queue<Track>())
-            // .BuildServiceProvider();
-
             Queue<Track> botTrackQueue = new Queue<Track>();
             Utils botUtils = new Utils();
-            CommandsCore commandsCore = new CommandsCore(botUtils, botTrackQueue, new BotCommandsOptions());
+            Timer inactivityTimer = new Timer((state) => { }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+            DateTime latestActivity = DateTime.Now;
+            Int32 ffmpegProcess = new Int32();
+
+            CommandsCore commandsCore = new CommandsCore(botUtils, botTrackQueue, inactivityTimer, latestActivity, ffmpegProcess, new BotCommandsOptions());
 
 
             var commandsServices = new ServiceCollection()
