@@ -18,7 +18,7 @@ TBA
 - [x] Detect player state accurately and respond accordingly
 - [x] Accept Playlists
 - [x] Download ~~/Stream~~ mode
-- [ ] Inactivity Timeout
+- [X] Inactivity Timeout
 - [x] Slash Commands
 - [x] Volume Control
 - [ ] Handle Errors (Somewhat)
