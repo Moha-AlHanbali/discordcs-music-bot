@@ -24,11 +24,17 @@ namespace MusicBot
         Boolean replayFlag;
         String botChannelResponse;
         String memberChannelResponse;
+        Timer inactivityTimer;
+        Int32 ffmpegProcess;
+        public DateTime latestActivity;
 
-        public CommandsCore(Utils utils, Queue<Track> trackQueue, MusicBot.Program.BotCommandsOptions options)
+        public CommandsCore(Utils utils, Queue<Track> trackQueue, Timer inactivityTimer, DateTime latestActivity, Int32 ffmpegProcess, MusicBot.Program.BotCommandsOptions options)
         {
             this.utils = utils;
             this.trackQueue = trackQueue;
+            this.inactivityTimer = inactivityTimer;
+            this.latestActivity = latestActivity;
+            this.ffmpegProcess = ffmpegProcess;
             this.playStatus = options.playStatus;
             this.skipFlag = options.skipFlag;
             this.repeatFlag = options.repeatFlag;
@@ -42,17 +48,21 @@ namespace MusicBot
         /// Converts a WEBM media file to an MP3 file using FFmpeg.
         /// </summary>
         /// <param name="mediaPath">The path to the WEBM media file.</param>
-        private void ConvertWEBMtoMP3(string mediaPath)
+        private void ConvertWEBMtoACC(string mediaPath)
         {
-            // Start a new FFmpeg process to perform the conversion.
-            Process? ffmpeg = Process.Start(new ProcessStartInfo
+            using (var ffmpeg = new Process())
             {
-                FileName = "ffmpeg",
-                Arguments = $@"-i ""{mediaPath}"" -vn -ab 128k -ar 48000 -y ""{mediaPath.Replace(".webm", ".mp3")}"" ",
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            });
+                ffmpeg.StartInfo.FileName = "ffmpeg";
+                ffmpeg.StartInfo.Arguments = $@"-i ""{mediaPath}"" -vn -c:a aac -b:a 128k -ar 48000 -y ""{mediaPath.Replace(".webm", ".m4a")}"" ";
+                ffmpeg.StartInfo.RedirectStandardOutput = true;
+                ffmpeg.StartInfo.UseShellExecute = false;
+                ffmpeg.Start();
+
+                // Wait for the process to complete before exiting the method.
+                ffmpeg.WaitForExit();
+            }
         }
+
 
         /// <summary>
         /// Converts an audio file to PCM format using FFmpeg.
@@ -61,17 +71,19 @@ namespace MusicBot
         /// <returns>A <see cref="Stream"/> containing the converted audio data in PCM format.</returns>
         private Stream ConvertAudioToPcm(string mediaPath)
         {
-            // Start a new FFmpeg process to perform the conversion.
-            Process? ffmpeg = Process.Start(new ProcessStartInfo
+            using (Process ffmpeg = new Process())
             {
-                FileName = "ffmpeg",
-                Arguments = $@"-i ""{mediaPath}"" -ac 2 -f s16le -ar 48000 pipe:1",
-                RedirectStandardOutput = true,
-                UseShellExecute = false
-            });
+                // Start a new FFmpeg process to perform the conversion.
+                ffmpeg.StartInfo.FileName = "ffmpeg";
+                ffmpeg.StartInfo.Arguments = $@"-i ""{mediaPath}"" -ac 2 -f s16le -ar 48000 -nostdin -threads {Environment.ProcessorCount} pipe:1";
+                ffmpeg.StartInfo.RedirectStandardOutput = true;
+                ffmpeg.StartInfo.UseShellExecute = false;
+                ffmpeg.Start();
 
-            // Return the process's standard output stream, which contains the converted audio data.
-            return ffmpeg.StandardOutput.BaseStream;
+                ffmpegProcess = ffmpeg.Id;
+                // Return the process's standard output stream, which contains the converted audio data.
+                return ffmpeg.StandardOutput.BaseStream;
+            }
         }
 
 
@@ -81,20 +93,22 @@ namespace MusicBot
         /// <returns>A string representing the PID of the FFmpeg process.</returns>
         private string GetPID()
         {
-            // Start a new process to execute the pgrep command and retrieve the FFmpeg process ID.
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.FileName = "pgrep";
-            proc.StartInfo.Arguments = "ffmpeg";
-            proc.Start();
+            using (Process proc = new Process())
+            {
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.FileName = "pgrep";
+                proc.StartInfo.Arguments = "ffmpeg";
+                proc.Start();
 
-            // Read the output of the process, which contains the FFmpeg process ID.
-            string PID = proc.StandardOutput.ReadToEnd();
+                // Read the output of the process, which contains the FFmpeg process ID.
+                string PID = proc.StandardOutput.ReadToEnd();
 
-            // Wait for the process to exit before returning the PID.
-            proc.WaitForExit();
-            return PID;
+                // Wait for the process to exit before returning the PID.
+                proc.WaitForExit();
+
+                return PID;
+            }
         }
 
 
@@ -102,39 +116,42 @@ namespace MusicBot
         /// Pauses the FFmpeg process with the specified process ID (PID).
         /// </summary>
         /// <param name="PID">The process ID (PID) of the FFmpeg process to pause.</param>
-        private void PauseFFMPEG(string PID)
+        private void PauseFFMPEG(int PID)
         {
             // Start a new process to execute the kill command with the SIGSTOP signal and the specified PID.
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.FileName = "kill";
-            proc.StartInfo.Arguments = $@"-s SIGSTOP {Int32.Parse(PID)}";
-            proc.Start();
+            using (var proc = new Process())
+            {
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.FileName = "kill";
+                proc.StartInfo.Arguments = $@"-s SIGSTOP {PID}";
+                proc.Start();
 
-            // Wait for the process to exit before returning.
-            proc.WaitForExit();
-            return;
+                // Wait for the process to exit before returning.
+                proc.WaitForExit();
+            }
         }
+
 
 
         /// <summary>
         /// Resumes the FFmpeg process with the specified process ID (PID).
         /// </summary>
         /// <param name="PID">The process ID (PID) of the FFmpeg process to resume.</param>
-        private void ResumeFFMPEG(string PID)
+        private void ResumeFFMPEG(int PID)
         {
             // Start a new process to execute the kill command with the SIGCONT signal and the specified PID.
-            Process proc = new Process();
-            proc.StartInfo.UseShellExecute = false;
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.FileName = "kill";
-            proc.StartInfo.Arguments = $@"-s SIGCONT {Int32.Parse(PID)}";
-            proc.Start();
+            using (var proc = new Process())
+            {
+                proc.StartInfo.UseShellExecute = false;
+                proc.StartInfo.RedirectStandardOutput = true;
+                proc.StartInfo.FileName = "kill";
+                proc.StartInfo.Arguments = $@"-s SIGCONT {PID}";
+                proc.Start();
 
-            // Wait for the process to exit before returning.
-            proc.WaitForExit();
-            return;
+                // Wait for the process to exit before returning.
+                proc.WaitForExit();
+            }
         }
 
 
@@ -155,6 +172,13 @@ namespace MusicBot
             proc.WaitForExit();
             return;
         }
+
+        public void UpdateLatestActivity()
+        {
+            latestActivity = DateTime.Now;
+            return;
+        }
+
 
         #endregion
 
@@ -338,6 +362,7 @@ namespace MusicBot
             if (replayFlag)
             {
                 replayFlag = false;
+                UpdateLatestActivity();
                 await PlayNext(context, trackQueue.Peek());
                 return;
             }
@@ -356,6 +381,7 @@ namespace MusicBot
             else playStatus = false;
             repeatFlag = false;
             utils.PurgeFile(track.TrackURL);
+            UpdateLatestActivity();
             return;
         }
 
@@ -375,6 +401,7 @@ namespace MusicBot
             if (replayFlag)
             {
                 replayFlag = false;
+                UpdateLatestActivity();
                 await PlayNext(context, trackQueue.Peek());
                 return;
             }
@@ -393,6 +420,7 @@ namespace MusicBot
             else playStatus = false;
             repeatFlag = false;
             utils.PurgeFile(track.TrackURL);
+            UpdateLatestActivity();
             return;
         }
 
@@ -406,7 +434,7 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             var transmit = botConnection.GetTransmitSink();
-            if (!utils.CheckFile(mediaPath)) ConvertWEBMtoMP3(mediaPath);
+            if (!utils.CheckFile(mediaPath)) ConvertWEBMtoACC(mediaPath);
             var pcm = ConvertAudioToPcm(mediaPath);
             await pcm.CopyToAsync(transmit);
             await pcm.DisposeAsync();
@@ -422,11 +450,57 @@ namespace MusicBot
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
             var transmit = botConnection.GetTransmitSink();
-            if (!utils.CheckFile(mediaPath)) ConvertWEBMtoMP3(mediaPath);
+            if (!utils.CheckFile(mediaPath)) ConvertWEBMtoACC(mediaPath);
             var pcm = ConvertAudioToPcm(mediaPath);
             await pcm.CopyToAsync(transmit);
             await pcm.DisposeAsync();
             return;
+        }
+
+        private void StartInactivityTimer<Context>(Context context)
+        {
+            if (inactivityTimer != null)
+            {
+                inactivityTimer.Dispose();
+            }
+
+            inactivityTimer = new Timer(async _ =>
+            {
+                if (!playStatus && (DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1))
+                {
+
+                    if (context is CommandContext commandContext)
+                    {
+                        VoiceNextConnection botConnection = GetBotConnection(commandContext);
+                        DiscordChannel? botChannel = botConnection?.TargetChannel;
+                        playStatus = false;
+                        StopFFMPEG();
+                        trackQueue.Clear();
+                        utils.ClearMediaDirectory();
+                        await ReplyToCommand(commandContext, $"Leaving {botChannel?.Name} channel due to inactivity");
+                        botConnection?.Disconnect();
+                        return;
+                    }
+                    if (context is InteractionContext interactionContext)
+                    {
+                        VoiceNextConnection botConnection = GetBotConnection(interactionContext);
+                        DiscordChannel? botChannel = botConnection?.TargetChannel;
+                        playStatus = false;
+                        StopFFMPEG();
+                        trackQueue.Clear();
+                        utils.ClearMediaDirectory();
+                        if (botChannel != null)
+                        { await interactionContext.Channel.SendMessageAsync($"Leaving {botChannel?.Name} channel due to inactivity"); }
+                        botConnection?.Disconnect();
+                        return;
+                    }
+
+                }
+                else
+                {
+                    inactivityTimer?.Change((DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1) ? TimeSpan.Zero : TimeSpan.FromMinutes(1) - (DateTime.Now - latestActivity), TimeSpan.FromMilliseconds(-1));
+                }
+            }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(-1));
         }
         #endregion
 
@@ -456,6 +530,7 @@ namespace MusicBot
                     {
                         await ReplyToCommand(context, $"Joining {memberChannel?.Name} . . .");
                         await memberChannel.ConnectAsync();
+                        StartInactivityTimer(context);
                         return;
                     }
 
@@ -465,7 +540,6 @@ namespace MusicBot
                         botConnection.Disconnect();
                         await memberChannel.ConnectAsync();
                         return;
-
                     }
 
                     await ReplyToCommand(context, $"Already joined to {memberChannel?.Name} channel");
@@ -500,6 +574,7 @@ namespace MusicBot
                     {
                         await EndSlashCommand(context, $"Joining {memberChannel?.Name} . . .");
                         await memberChannel.ConnectAsync();
+                        StartInactivityTimer(context);
                         return;
                     }
 
@@ -543,6 +618,7 @@ namespace MusicBot
                 }
 
                 playStatus = false;
+                StopFFMPEG();
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
                 await ReplyToCommand(context, $"Leaving {botChannel.Name} channel");
@@ -778,7 +854,8 @@ namespace MusicBot
             }
 
             string PID = GetPID();
-            PauseFFMPEG(PID);
+            PauseFFMPEG(ffmpegProcess);
+            playStatus = false;
             await ReplyToCommand(context, $"Paused {trackQueue.Peek().TrackName}");
             return;
         }
@@ -802,7 +879,7 @@ namespace MusicBot
             }
 
             string PID = GetPID();
-            PauseFFMPEG(PID);
+            PauseFFMPEG(ffmpegProcess);
             await ReplyToCommand(context, $"Paused {trackQueue.Peek().TrackName}");
             return;
         }
@@ -825,7 +902,8 @@ namespace MusicBot
             }
 
             string PID = GetPID();
-            ResumeFFMPEG(PID);
+            ResumeFFMPEG(ffmpegProcess);
+            playStatus = true;
             await ReplyToCommand(context, $"Resumed {trackQueue.Peek().TrackName}");
             return;
         }
@@ -849,7 +927,7 @@ namespace MusicBot
             }
 
             string PID = GetPID();
-            ResumeFFMPEG(PID);
+            ResumeFFMPEG(ffmpegProcess);
             await ReplyToCommand(context, $"Resumed {trackQueue.Peek().TrackName}");
             return;
         }
