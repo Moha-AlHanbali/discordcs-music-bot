@@ -13,6 +13,12 @@ namespace MusicBot
             this.commandsCore = commandsCore;
         }
 
+        public override async Task<bool> BeforeSlashExecutionAsync(InteractionContext context)
+        {
+            commandsCore.UpdateLatestActivity();
+            return await base.BeforeSlashExecutionAsync(context);
+        }
+
         [SlashCommand("join", "A slash command that instructs the bot to join your voice channel.")]
         public async Task JoinCommand(InteractionContext context)
         {

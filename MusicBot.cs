@@ -31,7 +31,6 @@
                 AutoReconnect = true,
                 MinimumLogLevel = LogLevel.Debug
             });
-
             Queue<Track> botTrackQueue = new Queue<Track>();
             Utils botUtils = new Utils();
             Timer inactivityTimer = new Timer((state) => { }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));

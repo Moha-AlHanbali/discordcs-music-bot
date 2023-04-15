@@ -179,25 +179,6 @@ namespace MusicBot
             return;
         }
 
-        private void StartInactivityTimer(CommandContext context)
-        {
-            if (inactivityTimer != null)
-            {
-                inactivityTimer.Dispose();
-            }
-
-            inactivityTimer = new Timer(async _ =>
-            {
-                if (!playStatus && (DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1))
-                {
-                    await LeaveCommand(context);
-                }
-                else
-                {
-                    inactivityTimer?.Change((DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1) ? TimeSpan.Zero : TimeSpan.FromMinutes(1) - (DateTime.Now - latestActivity), TimeSpan.FromMilliseconds(-1));
-                }
-            }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(-1));
-        }
 
         #endregion
 
@@ -420,6 +401,7 @@ namespace MusicBot
             if (replayFlag)
             {
                 replayFlag = false;
+                UpdateLatestActivity();
                 await PlayNext(context, trackQueue.Peek());
                 return;
             }
@@ -438,6 +420,7 @@ namespace MusicBot
             else playStatus = false;
             repeatFlag = false;
             utils.PurgeFile(track.TrackURL);
+            UpdateLatestActivity();
             return;
         }
 
@@ -472,6 +455,52 @@ namespace MusicBot
             await pcm.CopyToAsync(transmit);
             await pcm.DisposeAsync();
             return;
+        }
+
+        private void StartInactivityTimer<Context>(Context context)
+        {
+            if (inactivityTimer != null)
+            {
+                inactivityTimer.Dispose();
+            }
+
+            inactivityTimer = new Timer(async _ =>
+            {
+                if (!playStatus && (DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1))
+                {
+
+                    if (context is CommandContext commandContext)
+                    {
+                        VoiceNextConnection botConnection = GetBotConnection(commandContext);
+                        DiscordChannel? botChannel = botConnection?.TargetChannel;
+                        playStatus = false;
+                        StopFFMPEG();
+                        trackQueue.Clear();
+                        utils.ClearMediaDirectory();
+                        await ReplyToCommand(commandContext, $"Leaving {botChannel?.Name} channel due to inactivity");
+                        botConnection?.Disconnect();
+                        return;
+                    }
+                    if (context is InteractionContext interactionContext)
+                    {
+                        VoiceNextConnection botConnection = GetBotConnection(interactionContext);
+                        DiscordChannel? botChannel = botConnection?.TargetChannel;
+                        playStatus = false;
+                        StopFFMPEG();
+                        trackQueue.Clear();
+                        utils.ClearMediaDirectory();
+                        if (botChannel != null)
+                        { await interactionContext.Channel.SendMessageAsync($"Leaving {botChannel?.Name} channel due to inactivity"); }
+                        botConnection?.Disconnect();
+                        return;
+                    }
+
+                }
+                else
+                {
+                    inactivityTimer?.Change((DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1) ? TimeSpan.Zero : TimeSpan.FromMinutes(1) - (DateTime.Now - latestActivity), TimeSpan.FromMilliseconds(-1));
+                }
+            }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(-1));
         }
         #endregion
 
@@ -545,6 +574,7 @@ namespace MusicBot
                     {
                         await EndSlashCommand(context, $"Joining {memberChannel?.Name} . . .");
                         await memberChannel.ConnectAsync();
+                        StartInactivityTimer(context);
                         return;
                     }
 
