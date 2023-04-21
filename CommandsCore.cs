@@ -691,19 +691,16 @@ namespace MusicBot
             if (path.Length > 0)
             {
                 string joinedPath = string.Join(" ", path);
-                if (trackQueue.Any())
-                {
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
-                    return;
-                }
-                else if (!trackQueue.Any() && playStatus == false)
-                {
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
-                    await PlayNext(context, trackQueue.Peek());
-                    return;
-                }
+                await AddTrack(context, youtube, youtubeClient, joinedPath);
+                return;
+            }
+            else
+            {
+                await ReplyToCommand(context, "Please add track name or URL to play");
+
             }
         }
+
         public async Task AddCommand(InteractionContext context, params string[] path)
         {
             VoiceNextConnection botConnection = GetBotConnection(context);
@@ -729,17 +726,12 @@ namespace MusicBot
             if (path.Length > 0)
             {
                 string joinedPath = string.Join(" ", path);
-                if (trackQueue.Any())
-                {
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
-                    return;
-                }
-                else if (!trackQueue.Any() && playStatus == false)
-                {
-                    await AddTrack(context, youtube, youtubeClient, joinedPath);
-                    await PlayNext(context, trackQueue.Peek());
-                    return;
-                }
+                await AddTrack(context, youtube, youtubeClient, joinedPath);
+                return;
+            }
+            else
+            {
+                await ReplyToCommand(context, "Please add track name or URL to play");
             }
         }
 
@@ -763,17 +755,22 @@ namespace MusicBot
             }
             if (path.Length > 0)
             {
-                await AddCommand(context, path);
                 if (!trackQueue.Any())
                 {
+                    await AddCommand(context, path);
                     await PlayNext(context, trackQueue.Peek());
                     return;
                 }
-                else if (trackQueue.Any() && playStatus == false)
+                else
                 {
-                    await PlayNext(context, trackQueue.Peek());
+                    await AddCommand(context, path);
                     return;
                 }
+            }
+            else if (trackQueue.Any() && playStatus == false)
+            {
+                await PlayNext(context, trackQueue.Peek());
+                return;
             }
             else
             {
@@ -812,14 +809,20 @@ namespace MusicBot
 
                 if (!trackQueue.Any())
                 {
+                    await AddCommand(context, path);
                     await PlayNext(context, trackQueue.Peek());
                     return;
                 }
-                else if (trackQueue.Any() && playStatus == false)
+                else
                 {
-                    await PlayNext(context, trackQueue.Peek());
+                    await AddCommand(context, path);
                     return;
                 }
+            }
+            else if (trackQueue.Any() && playStatus == false)
+            {
+                await PlayNext(context, trackQueue.Peek());
+                return;
             }
             else
             {
@@ -956,7 +959,7 @@ namespace MusicBot
                 StopFFMPEG();
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
-                await ReplyToCommand(context, "Player stopped playing and cleared Queue");
+                await ReplyToCommand(context, "Bot stopped playing and cleared Queue");
                 return;
             }
             catch
@@ -989,7 +992,7 @@ namespace MusicBot
                 StopFFMPEG();
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
-                await ReplyToCommand(context, "Player stopped playing and cleared Queue");
+                await ReplyToCommand(context, "Bot stopped playing and cleared Queue");
                 return;
             }
             catch
@@ -1431,6 +1434,6 @@ namespace MusicBot
                 return;
             }
         }
-        #endregion    
+        #endregion
     }
 }
