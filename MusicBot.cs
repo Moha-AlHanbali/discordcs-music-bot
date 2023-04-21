@@ -72,8 +72,8 @@
             public bool skipFlag { get; set; } = false;
             public bool repeatFlag { get; set; } = false;
             public bool replayFlag { get; set; } = false;
-            public string botChannelResponse { get; set; } = "Bot must join a voice channel to accept commands";
-            public string memberChannelResponse { get; set; } = "You have to be in a voice channel to use bot commands";
+            public string botChannelResponse { get; set; } = "The bot must join a voice channel to accept commands.";
+            public string memberChannelResponse { get; set; } = "Please join a voice channel to use bot commands.";
         }
     }
 
