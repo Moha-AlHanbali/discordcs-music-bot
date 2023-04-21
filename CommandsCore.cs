@@ -262,7 +262,7 @@ namespace MusicBot
                     var playlist = await youtubeClient.Playlists.GetAsync(joinedPath);
 
                     var videoList = await youtube.YoutubeGrabList(youtubeClient, joinedPath);
-                    await ReplyToCommand(context, $"Fetching tracks from {playlist.Title}...");
+                    await ReplyToCommand(context, $"Processing tracks from {playlist.Title} playlist.");
                     foreach (var video in videoList)
                     {
                         Track track = new Track(video.Title, "", video.Duration);
@@ -280,7 +280,7 @@ namespace MusicBot
                     string mediaPath = await youtube.YoutubeDownload(youtubeClient, joinedPath, track);
                     track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                     trackQueue.Enqueue(track);
-                    await ReplyToCommand(context, $"Added {track.TrackName} to queue");
+                    await ReplyToCommand(context, $"Added {track.TrackName} - {track.TrackDuration} to queue");
                     return;
                 }
             }
@@ -291,7 +291,7 @@ namespace MusicBot
                 string mediaPath = await youtube.YoutubeDownload(youtubeClient, song.Url, track);
                 track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                 trackQueue.Enqueue(track);
-                await ReplyToCommand(context, $"Added {track.TrackName} to queue");
+                await ReplyToCommand(context, $"Added {track.TrackName} - {track.TrackDuration} to queue");
                 return;
             }
         }
@@ -313,7 +313,7 @@ namespace MusicBot
                     var playlist = await youtubeClient.Playlists.GetAsync(joinedPath);
 
                     var videoList = await youtube.YoutubeGrabList(youtubeClient, joinedPath);
-                    await FollowUpOnSlashCommand(context, $"Fetching tracks from {playlist.Title}...");
+                    await FollowUpOnSlashCommand(context, $"Processing tracks from {playlist.Title} playlist");
                     foreach (var video in videoList)
                     {
                         Track track = new Track(video.Title, "", video.Duration);
@@ -331,7 +331,7 @@ namespace MusicBot
                     string mediaPath = await youtube.YoutubeDownload(youtubeClient, joinedPath, track);
                     track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                     trackQueue.Enqueue(track);
-                    await FollowUpOnSlashCommand(context, $"Added {track.TrackName} to queue");
+                    await FollowUpOnSlashCommand(context, $"Added {track.TrackName} - {track.TrackDuration} to queue");
                     return;
                 }
             }
@@ -342,7 +342,7 @@ namespace MusicBot
                 string mediaPath = await youtube.YoutubeDownload(youtubeClient, song.Url, track);
                 track.TrackURL = $"{System.IO.Directory.GetCurrentDirectory()}/{mediaPath}";
                 trackQueue.Enqueue(track);
-                await FollowUpOnSlashCommand(context, $"Added {track.TrackName} to queue");
+                await FollowUpOnSlashCommand(context, $"Added {track.TrackName} - {track.TrackDuration} to queue");
                 return;
             }
         }
@@ -528,7 +528,7 @@ namespace MusicBot
 
                     if (botConnection == null)
                     {
-                        await ReplyToCommand(context, $"Joining {memberChannel?.Name} . . .");
+                        await ReplyToCommand(context, $"Joining {memberChannel?.Name}");
                         await memberChannel.ConnectAsync();
                         StartInactivityTimer(context);
                         return;
@@ -536,7 +536,7 @@ namespace MusicBot
 
                     if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
                     {
-                        await ReplyToCommand(context, $"Moving to {memberChannel?.Name} . . .");
+                        await ReplyToCommand(context, $"Moving to {memberChannel?.Name}");
                         botConnection.Disconnect();
                         await memberChannel.ConnectAsync();
                         return;
@@ -547,7 +547,7 @@ namespace MusicBot
                 }
                 catch
                 {
-                    await ReplyToCommand(context, "Could not join channel..");
+                    await ReplyToCommand(context, "Could not join voice channel");
                 }
             }
         }
@@ -572,7 +572,7 @@ namespace MusicBot
 
                     if (botConnection == null)
                     {
-                        await EndSlashCommand(context, $"Joining {memberChannel?.Name} . . .");
+                        await EndSlashCommand(context, $"Joining {memberChannel?.Name}");
                         await memberChannel.ConnectAsync();
                         StartInactivityTimer(context);
                         return;
@@ -580,7 +580,7 @@ namespace MusicBot
 
                     if (botConnection != null && botChannel != null && memberChannel?.Id != botChannel.Id)
                     {
-                        await EndSlashCommand(context, $"Moving to {memberChannel?.Name} . . .");
+                        await EndSlashCommand(context, $"Moving to {memberChannel?.Name}");
                         botConnection.Disconnect();
                         await memberChannel.ConnectAsync();
                         return;
@@ -592,7 +592,7 @@ namespace MusicBot
                 }
                 catch
                 {
-                    await ReplyToCommand(context, "Could not join channel..");
+                    await ReplyToCommand(context, "Could not join voice channel");
                 }
             }
         }
@@ -627,7 +627,7 @@ namespace MusicBot
             }
             catch
             {
-                await ReplyToCommand(context, "Could not leave channel..");
+                await ReplyToCommand(context, "Could not leave voice channel");
             }
         }
         public async Task LeaveCommand(InteractionContext context)
@@ -661,7 +661,7 @@ namespace MusicBot
             }
             catch
             {
-                await ReplyToCommand(context, "Could not leave channel..");
+                await ReplyToCommand(context, "Could not leave voice channel");
             }
         }
 
@@ -777,14 +777,14 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Please specify a track to play. . .");
+                await ReplyToCommand(context, "Please add track name or URL to play");
                 return;
             }
 
             // }
             // catch
             // {
-            //     await ReplyToCommand(context, $"Unable to play track...");
+            //     await ReplyToCommand(context, $"Unable to play track");
             // }
         }
 
@@ -823,14 +823,14 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Please specify a track to play. . .");
+                await ReplyToCommand(context, "Please add track name or URL to play");
                 return;
             }
 
             // }
             // catch
             // {
-            //     await ReplyToCommand(context, $"Unable to play track...");
+            //     await ReplyToCommand(context, $"Unable to play track");
             // }
 
         }
@@ -956,12 +956,12 @@ namespace MusicBot
                 StopFFMPEG();
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
-                await ReplyToCommand(context, "Player stopped and cleared Queue. . .");
+                await ReplyToCommand(context, "Player stopped playing and cleared Queue");
                 return;
             }
             catch
             {
-                await ReplyToCommand(context, "Could not stop player..");
+                await ReplyToCommand(context, "Could not stop player");
 
             }
         }
@@ -989,12 +989,12 @@ namespace MusicBot
                 StopFFMPEG();
                 trackQueue.Clear();
                 utils.ClearMediaDirectory();
-                await ReplyToCommand(context, "Player stopped and cleared Queue. . .");
+                await ReplyToCommand(context, "Player stopped playing and cleared Queue");
                 return;
             }
             catch
             {
-                await ReplyToCommand(context, "Could not stop player..");
+                await ReplyToCommand(context, "Could not stop player");
 
             }
         }
@@ -1041,14 +1041,14 @@ namespace MusicBot
                 }
                 else
                 {
-                    await ReplyToCommand(context, "Track queue is empty..");
+                    await ReplyToCommand(context, "Track queue is empty");
                     return;
                 }
 
             }
             catch
             {
-                await ReplyToCommand(context, "Could not show queue..");
+                await ReplyToCommand(context, "Could not show track queue");
 
             }
 
@@ -1096,14 +1096,14 @@ namespace MusicBot
                 }
                 else
                 {
-                    await ReplyToCommand(context, "Track queue is empty..");
+                    await ReplyToCommand(context, "Track queue is empty");
                     return;
                 }
 
             }
             catch
             {
-                await ReplyToCommand(context, "Could not show queue..");
+                await ReplyToCommand(context, "Could not show track queue");
 
             }
 
@@ -1143,13 +1143,13 @@ namespace MusicBot
                 }
                 else
                 {
-                    await ReplyToCommand(context, "No tracks to skip..");
+                    await ReplyToCommand(context, "Track queue is empty");
                     return;
                 }
             }
             catch
             {
-                await ReplyToCommand(context, "Could not skip track..");
+                await ReplyToCommand(context, "Could not skip track");
 
             }
         }
@@ -1188,13 +1188,13 @@ namespace MusicBot
                 }
                 else
                 {
-                    await ReplyToCommand(context, "No tracks to skip..");
+                    await ReplyToCommand(context, "Track queue is empty");
                     return;
                 }
             }
             catch
             {
-                await ReplyToCommand(context, "Could not skip track..");
+                await ReplyToCommand(context, "Could not skip track");
 
             }
         }
@@ -1236,7 +1236,7 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Track queue is empty..");
+                await ReplyToCommand(context, "Track queue is empty");
                 return;
             }
         }
@@ -1278,7 +1278,7 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Track queue is empty..");
+                await ReplyToCommand(context, "Track queue is empty");
                 return;
             }
         }
@@ -1320,7 +1320,7 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Track queue is empty..");
+                await ReplyToCommand(context, "Track queue is empty");
                 return;
             }
 
@@ -1363,7 +1363,7 @@ namespace MusicBot
             }
             else
             {
-                await ReplyToCommand(context, "Track queue is empty..");
+                await ReplyToCommand(context, "Track queue is empty");
                 return;
             }
         }
