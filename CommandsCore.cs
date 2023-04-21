@@ -466,7 +466,7 @@ namespace MusicBot
 
             inactivityTimer = new Timer(async _ =>
             {
-                if (!playStatus && (DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1))
+                if (!playStatus && (DateTime.Now - latestActivity) > TimeSpan.FromMinutes(10))
                 {
 
                     if (context is CommandContext commandContext)
@@ -498,9 +498,9 @@ namespace MusicBot
                 }
                 else
                 {
-                    inactivityTimer?.Change((DateTime.Now - latestActivity) > TimeSpan.FromMinutes(1) ? TimeSpan.Zero : TimeSpan.FromMinutes(1) - (DateTime.Now - latestActivity), TimeSpan.FromMilliseconds(-1));
+                    inactivityTimer?.Change((DateTime.Now - latestActivity) > TimeSpan.FromMinutes(10) ? TimeSpan.Zero : TimeSpan.FromMinutes(10) - (DateTime.Now - latestActivity), TimeSpan.FromMilliseconds(-1));
                 }
-            }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(-1));
+            }, null, TimeSpan.FromMinutes(10), TimeSpan.FromMilliseconds(-1));
         }
         #endregion
 
