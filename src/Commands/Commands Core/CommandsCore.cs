@@ -785,7 +785,7 @@ namespace MusicBot
             // }
         }
 
-        public async Task PlayCommand(InteractionContext context, params string[] path)
+        public async Task PlayCommand(InteractionContext context, string path)
         {
             // try
             // {
@@ -805,8 +805,6 @@ namespace MusicBot
             }
             if (path.Length > 0)
             {
-                await AddCommand(context, path);
-
                 if (!trackQueue.Any())
                 {
                     await AddCommand(context, path);
