@@ -1,6 +1,5 @@
 ﻿namespace MusicBot
 {
-    using System.Diagnostics;
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.VoiceNext;
