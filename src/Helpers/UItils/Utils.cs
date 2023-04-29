@@ -5,7 +5,8 @@ namespace MusicBot
     {
         public void CreateMediaDirectory()
         {
-            if (!Directory.Exists("MediaTemp")) CreateMediaDirectory();
+            if (!Directory.Exists("MediaTemp")) Directory.CreateDirectory("MediaTemp");;
+            return;
         }
         public void ClearMediaDirectory()
         {
@@ -19,17 +20,21 @@ namespace MusicBot
             {
                 dir.Delete(true);
             }
+            return;
+
         }
         public void PrepareMediaDirectory()
         {
             if (!Directory.Exists("MediaTemp")) CreateMediaDirectory();
             else ClearMediaDirectory();
+            return;
         }
 
         public void PurgeFile(string filePath)
         {
             if (File.Exists(filePath)) File.Delete(filePath);
             if (File.Exists(filePath.Replace(".webm", ".mp3"))) File.Delete(filePath.Replace(".webm", ".mp3"));
+            return;
         }
         public Boolean CheckFile(string filePath)
         {

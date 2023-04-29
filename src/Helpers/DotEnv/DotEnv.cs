@@ -8,7 +8,10 @@ namespace MusicBot
         public static void Load(string filePath)
         {
             if (!File.Exists(filePath))
+            {
+                Console.WriteLine($"Could not find Env file: {filePath}");
                 return;
+            }
 
             foreach (var line in File.ReadAllLines(filePath))
             {

@@ -1,6 +1,5 @@
 ﻿namespace MusicBot
 {
-    using System.Diagnostics;
     using DSharpPlus;
     using DSharpPlus.CommandsNext;
     using DSharpPlus.VoiceNext;
@@ -62,7 +61,6 @@
             bot.UseVoiceNext();
             Utils utils = new Utils();
             utils.PrepareMediaDirectory();
-
             await bot.ConnectAsync();
             await Task.Delay(-1);
         }
