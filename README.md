@@ -3,7 +3,6 @@
 ## Getting Started
 
 TBA
-
 ## Functionality
 
 - [x] Get it running
