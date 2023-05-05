@@ -13,7 +13,7 @@ RUN dotnet publish -c Release -o release
 # Stage 2 - Run the application
 FROM mcr.microsoft.com/dotnet/runtime:6.0
 
-RUN apt-get update && apt-get install -y ffmpeg
+RUN apt-get update && apt-get install -y ffmpeg procps
 
 WORKDIR /app/release
 COPY --from=build /app/release . 
