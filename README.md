@@ -2,7 +2,20 @@
 
 ## Getting Started
 
-TBA
+### Using bot locally
+
+- Prerequisite: Have `dotnet 6.0 SDK and Runtime setup` and `ffmpeg` installed on your machine.
+- Navigate to where `discordcs-music-bot.csproj` is
+- Create `.env` file and add your token as shown in `.env.sample` file
+- Run the bot using `dotnet run` command
+
+### Running bot in a container
+
+- Prerequisite: Have `Docker` setup and running on your machine
+- Navigate to where `discordcs-music-bot.csproj` is
+- Build a Docker image using `docker build -t music-bot .` command
+- Run the image in a container using `docker run -p8080:80  music-bot` command
+
 ## Functionality
 
 - [x] Get it running
@@ -20,6 +33,7 @@ TBA
 - [X] Inactivity Timeout
 - [x] Slash Commands
 - [x] Volume Control
+- [x] Containerize it
 - [ ] Handle Errors (Somewhat)
 
 ## Improvements
