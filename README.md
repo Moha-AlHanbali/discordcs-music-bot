@@ -4,9 +4,12 @@
 
 ### Using bot locally
 
-- Prerequisite: Have `dotnet 6.0 SDK and Runtime setup` and `ffmpeg` installed on your machine.
+- Prerequisite:
+  - Have [.Net 6.0 SDK and Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0) and [FFmpeg](https://ffmpeg.org/download.html) installed on your machine
+  - Install required [Voice Natives](https://dsharpplus.github.io/DSharpPlus/articles/audio/voicenext/prerequisites.html) to connect to voice channels
 - Navigate to where `discordcs-music-bot.csproj` is
 - Create `.env` file and add your token as shown in `.env.sample` file
+- Run `dotnet restore` command to restore dependencies
 - Run the bot using `dotnet run` command
 
 ### Running bot in a container
